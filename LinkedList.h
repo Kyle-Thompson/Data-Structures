@@ -21,6 +21,7 @@
   - Test with valgrind for memory leaks
   - Find a good category for operator=.
   - Find out if nodes are being correctly removed since they're shared pointers.
+  - Find out why swap isn't working now for whatever reason.
  */
 
 
@@ -124,7 +125,7 @@ public:
     ~LinkedList();
     
     // where to even put this assignment operator?
-    LinkedList<T>& operator=(LinkedList<T>);                                           // Not yet implemented.
+    //LinkedList<T>& operator=(LinkedList<T>);                                           // Not yet implemented.
     
     /* Iterators */
     iterator begin() const;
@@ -281,7 +282,6 @@ LinkedList<T>::LinkedList(std::initializer_list<T>)
 {
     
 }
-
 
 
 /*
@@ -974,7 +974,10 @@ template <class T>
 void
 LinkedList<T>::swap(LinkedList<T>& rhs)
 {
-    std::swap(*this, rhs);
+    std::swap(_begin, rhs._begin);
+    std::swap(_end, rhs._end);
+    std::swap(_head, rhs._head);
+    std::swap(_tail, rhs._tail);
 }
 
 
