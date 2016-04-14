@@ -1,0 +1,26 @@
+/ Linear
+    / Arrays
+        + Array
+        + ArrayList
+
+    / Linked Lists
+        + LinkedList (doubly linked)
+        + Stack
+        + Queue
+        + SkipList
+
+/ Trees
+    / Binary Trees
+        + BinaryTree
+        + AVLTree
+        + RedBlackTree
+        + SplayTree
+    / B Trees
+    / Heaps
+    / Trees
+    / Multiway Trees
+    / Space Partitioning Trees
+
+/ Hashes
+
+/ Graphs
