@@ -94,6 +94,8 @@ public:
         reference operator->() { return itr->data; }
         ListIterator& operator++() { itr = itr->next; return *this; }
         ListIterator operator++(int) { ListIterator temp(*this); itr = itr->next; return temp; }
+        ListIterator& operator--() { itr = itr->prev; return *this; }
+        ListIterator operator--(int) { ListIterator temp(*this); itr = itr->prev; return temp; }
         bool operator==(const ListIterator& rhs) { return itr->data == rhs.itr->data; }
         bool operator!=(const ListIterator& rhs) { return !(itr == rhs.itr); }
     };
@@ -108,8 +110,6 @@ public:
 private:
     std::shared_ptr<Node> _begin;  // Dummy node at start of list.
     std::shared_ptr<Node> _end;    // Dummy node at end of list.
-    std::shared_ptr<Node> _head;   // First real element.
-    std::shared_ptr<Node> _tail;   // Last real element.
     size_type _size;               // Number of real elements in list.
     
     
@@ -117,11 +117,11 @@ private:
 public:
     /* Constructors */
     LinkedList();
-    LinkedList(size_type, const_ref);                                                  // Not yet implemented.
+    LinkedList(size_type, const_ref);
     LinkedList(iterator, iterator);                                                    // Not yet implemented.
     LinkedList(const LinkedList<T>&);
     LinkedList(LinkedList<T>&&);                                                       // Not yet implemented.
-    LinkedList(std::initializer_list<T>);                                              // Not yet implemented.
+    LinkedList(std::initializer_list<T>);
     ~LinkedList();
     
     // where to even put this assignment operator?
@@ -165,7 +165,7 @@ public:
     reference pop_back();
     iterator insert(iterator, const_ref);
     iterator insert(iterator, size_type, const_ref);
-    iterator insert(iterator, const_iterator, const_iterator);
+    iterator insert(iterator, iterator, iterator);
     iterator insert(iterator, rvalue_ref);
     iterator insert(iterator, std::initializer_list<value_type>);
     iterator erase(iterator);
@@ -215,19 +215,34 @@ template <class T>
 LinkedList<T>::LinkedList()
     : _begin(std::make_shared<Node>())
     , _end  (std::make_shared<Node>())
-    , _head (nullptr)
-    , _tail (nullptr)
     , _size (0)
-{}
+{
+    _begin->next = _end;
+    _end->prev = _begin;
+}
 
 
 /*
  Function: fill constructor
+ Parameters:
+  - n: The number of times the element will be copied
+       into the list.
+  - element: The element used to fill the list.
+ Return value: None
+ 
+ Description:
+    Initializes a list with n copies of element.
  */
 template <class T>
-LinkedList<T>::LinkedList(size_type, const_ref)
+LinkedList<T>::LinkedList(size_type n, const_ref element)
+    : _begin(std::make_shared<Node>())
+    , _end  (std::make_shared<Node>())
+    , _size (0)
 {
+    _begin->next = _end;
+    _end->prev = _begin;
     
+    insert(end(), n, element);
 }
 
 
@@ -236,8 +251,12 @@ LinkedList<T>::LinkedList(size_type, const_ref)
  */
 template <class T>
 LinkedList<T>::LinkedList(iterator, iterator)
+    : _begin(std::make_shared<Node>())
+    , _end  (std::make_shared<Node>())
+    , _size (0)
 {
-    
+    _begin->next = _end;
+    _end->prev = _begin;
 }
 
 
@@ -255,12 +274,12 @@ template <class T>
 LinkedList<T>::LinkedList(const LinkedList<T>& rhs)
     : _begin(std::make_shared<Node>())
     , _end  (std::make_shared<Node>())
-    , _head (nullptr)
-    , _tail (nullptr)
     , _size (0)
 {
-    for (auto data : rhs)
-        push_back(data);
+    _begin->next = _end;
+    _end->prev = _begin;
+    
+    insert(end(), rhs.begin(), rhs.end());
 }
 
 
@@ -269,18 +288,35 @@ LinkedList<T>::LinkedList(const LinkedList<T>& rhs)
  */
 template <class T>
 LinkedList<T>::LinkedList(LinkedList<T>&&)
+    : _begin(std::make_shared<Node>())
+    , _end  (std::make_shared<Node>())
+    , _size (0)
 {
-    
+    _begin->next = _end;
+    _end->prev = _begin;
 }
 
 
 /*
  Function: initializer list constructor
+ Parameters:
+  - il: An initializer list of elements to construct the
+        list with.
+ Return value: None
+ 
+ Description:
+    Initializes a list based on an initializer list.
  */
 template <class T>
-LinkedList<T>::LinkedList(std::initializer_list<T>)
+LinkedList<T>::LinkedList(std::initializer_list<T> il)
+    : _begin(std::make_shared<Node>())
+    , _end  (std::make_shared<Node>())
+    , _size (0)
 {
+    _begin->next = _end;
+    _end->prev = _begin;
     
+    insert(end(), il);
 }
 
 
@@ -312,7 +348,7 @@ inline typename LinkedList<T>::iterator
 LinkedList<T>::begin() const
 {
     assert(!empty());
-    return _head;
+    return _begin->next;
 }
 
 
@@ -325,7 +361,6 @@ template <class T>
 inline typename LinkedList<T>::iterator
 LinkedList<T>::end() const
 {
-    assert(!empty());
     return _end;
 }
 
@@ -340,7 +375,7 @@ inline typename LinkedList<T>::const_iterator
 LinkedList<T>::cbegin() const
 {
     assert(!empty());
-    return const_iterator(_head);
+    return const_iterator(_begin->next);
 }
 
 
@@ -353,7 +388,6 @@ template <class T>
 inline typename LinkedList<T>::const_iterator
 LinkedList<T>::cend() const
 {
-    assert(!empty());
     return const_iterator(_end);
 }
 
@@ -369,7 +403,7 @@ inline typename LinkedList<T>::reverse_iterator
 LinkedList<T>::rbegin() const
 {
     assert(!empty());
-    return _tail;
+    return _end->prev;
 }
 
 
@@ -383,7 +417,6 @@ template <class T>
 inline typename LinkedList<T>::reverse_iterator
 LinkedList<T>::rend() const
 {
-    assert(!empty());
     return _begin;
 }
 
@@ -399,7 +432,7 @@ inline typename LinkedList<T>::const_reverse_iterator
 LinkedList<T>::crbegin() const
 {
     assert(!empty());
-    return _tail;
+    return _end->prev;
 }
 
 
@@ -413,7 +446,6 @@ template <class T>
 inline typename LinkedList<T>::const_reverse_iterator
 LinkedList<T>::crend() const
 {
-    assert(!empty());
     return _begin;
 }
 
@@ -459,7 +491,7 @@ inline T&
 LinkedList<T>::front() const
 {
     assert(!empty());
-    return _head->data;
+    return _begin->next->data;
 }
 
 
@@ -473,7 +505,7 @@ inline T&
 LinkedList<T>::last() const
 {
     assert(!empty());
-    return _tail->data;
+    return _end->prev->data;
 }
 
 
@@ -489,7 +521,7 @@ LinkedList<T>::at(size_type index) const
 {
     assert (index < _size);
     
-    auto node = _head;
+    auto node = _begin->next;
     while (index-- > 0)
         node = node->next;
     
@@ -538,14 +570,14 @@ LinkedList<T>::push_front(const T& element)
     std::shared_ptr<Node> node = std::make_shared<Node> (element);
     
     if (empty()) {
-        _head = node;
-        _tail = node;
+        _begin->next = node;
+        _end->prev = node;
         node->next = _end;
         _end->prev = node;
     } else {
-        _head->prev = node;
-        node->next = _head;
-        _head = node;
+        _begin->next->prev = node;
+        node->next = _begin->next;
+        _begin->next = node;
     }
     
     node->prev = _begin;
@@ -574,14 +606,14 @@ LinkedList<T>::push_front(T&& element)
     std::shared_ptr<Node> node = std::make_shared<Node> (std::move(element));
     
     if (empty()) {
-        _head = node;
-        _tail = node;
+        _begin->next = node;
+        _end->prev = node;
         node->next = _end;
         _end->prev = node;
     } else {
-        _head->prev = node;
-        node->next = _head;
-        _head = node;
+        _begin->next->prev = node;
+        node->next = _begin->next;
+        _begin->next = node;
     }
     
     node->prev = _begin;
@@ -610,14 +642,14 @@ LinkedList<T>::push_back(const T& element)
     std::shared_ptr<Node> node = std::make_shared<Node>(element);
     
     if (empty()) {
-        _head = node;
-        _tail = node;
+        _begin->next = node;
+        _end->prev = node;
         node->prev = _begin;
         _begin->next = node;
     } else {
-        _tail->next = node;
-        node->prev = _tail;
-        _tail = node;
+        _end->prev->next = node;
+        node->prev = _end->prev;
+        _end->prev = node;
     }
     
     node->next = _end;
@@ -646,14 +678,14 @@ LinkedList<T>::push_back(T&& element)
     std::shared_ptr<Node> node = std::make_shared<Node>(std::move(element));
     
     if (empty()) {
-        _head = node;
-        _tail = node;
+        _begin->next = node;
+        _end->prev = node;
         node->prev = _begin;
         _begin->next = node;
     } else {
-        _tail->next = node;
-        node->prev = _tail;
-        _tail = node;
+        _end->prev->next = node;
+        node->prev = _end->prev;
+        _end->prev = node;
     }
     
     node->next = _end;
@@ -720,19 +752,16 @@ LinkedList<T>::pop_front()
 {
     assert(!empty());
     
-    T& element = _head->data;
+    T& element = _begin->next->data;
     --_size;
     
     if (empty()) {
-        _head = nullptr;
-        _tail = nullptr;
         _begin->next = nullptr;
         _end->prev = nullptr;
     } else {
         // auto old = _head; // should this be getting explicityly freed or something?
-        _head = _head->next;
-        _head->prev = _begin;
-        _begin->next = _head;
+        _begin->next = _begin->next->next;
+        _begin->next->prev = _begin;
     }
     
     return element;
@@ -755,18 +784,15 @@ LinkedList<T>::pop_back()
 {
     assert(!empty());
     
-    T& element = _tail->data;
+    T& element = _end->prev->data;
     --_size;
     
     if (empty()) {
-        _head = nullptr;
-        _tail = nullptr;
         _begin->next = nullptr;
         _end->prev = nullptr;
     } else {
-        _tail = _tail->prev;
-        _tail->next = _end;
-        _end->prev = _tail;
+        _end->prev = _end->prev->prev;
+        _end->prev->next = _end;
     }
     
     return element;
@@ -852,7 +878,7 @@ LinkedList<T>::insert(iterator pos, size_type n, const_ref element)
  */
 template <class T>
 typename LinkedList<T>::iterator
-LinkedList<T>::insert(iterator pos, const_iterator first, const_iterator last)
+LinkedList<T>::insert(iterator pos, iterator first, iterator last)
 {
     while (--last != first)
         insert(pos, *last);
@@ -887,7 +913,7 @@ LinkedList<T>::insert(iterator pos, rvalue_ref element)
  Parameters:
   - pos: An iterator at the position which the new element will be
          inserted in front of.
-  - init_list: An initializer list of new values to be added to the list.
+  - il: An initializer list of new values to be added to the list.
  
  Description:
     Adds all the items in an initializer list to the list at a given 
@@ -897,10 +923,10 @@ LinkedList<T>::insert(iterator pos, rvalue_ref element)
  */
 template <class T>
 typename LinkedList<T>::iterator
-LinkedList<T>::insert(iterator pos, std::initializer_list<T> init_list)
+LinkedList<T>::insert(iterator pos, std::initializer_list<T> il)
 {
-    for (auto& it = init_list.rbegin; it != init_list.rend(); --it) // TODO: should this be ++it since it's a reverse iterator?
-        insert(pos, *it);
+    for (auto it : il)
+        insert(pos, it);
     
     return --pos;
 }
@@ -976,8 +1002,6 @@ LinkedList<T>::swap(LinkedList<T>& rhs)
 {
     std::swap(_begin, rhs._begin);
     std::swap(_end, rhs._end);
-    std::swap(_head, rhs._head);
-    std::swap(_tail, rhs._tail);
 }
 
 
