@@ -16,12 +16,11 @@
   - Test all functions.
   - Find out if there's a viable way to make insert and erase take a const iterator.
   - Make sure that elements being inserted by range aren't still references to one another.
-  - Test insert functions.
-  - Initializer list constructor
   - Test with valgrind for memory leaks
   - Find a good category for operator=.
   - Find out if nodes are being correctly removed since they're shared pointers.
-  - Find out why swap isn't working now for whatever reason.
+  - Find a way to set dummy next and prev to itself in Node constructor instead of list constructor.
+  - Find out if ListIterator inheriting from std::iterator is even necessary.
  */
 
 
@@ -108,8 +107,7 @@ public:
 
 /* Data members */
 private:
-    std::shared_ptr<Node> _begin;  // Dummy node at start of list.
-    std::shared_ptr<Node> _end;    // Dummy node at end of list.
+    std::shared_ptr<Node> _dummy;  // Dummy node between start and end of list.
     size_type _size;               // Number of real elements in list.
     
     
@@ -170,7 +168,7 @@ public:
     iterator insert(iterator, std::initializer_list<value_type>);
     iterator erase(iterator);
     iterator erase(iterator, iterator);
-    void swap(LinkedList<T>&);
+    void swap(LinkedList<T>&);                                                         // No longer works.
     void clear() noexcept;
     
     /* Operations */
@@ -213,12 +211,11 @@ public:
  */
 template <class T>
 LinkedList<T>::LinkedList()
-    : _begin(std::make_shared<Node>())
-    , _end  (std::make_shared<Node>())
+    : _dummy(std::make_shared<Node>())
     , _size (0)
 {
-    _begin->next = _end;
-    _end->prev = _begin;
+    _dummy->next = _dummy;
+    _dummy->prev = _dummy;
 }
 
 
@@ -235,12 +232,11 @@ LinkedList<T>::LinkedList()
  */
 template <class T>
 LinkedList<T>::LinkedList(size_type n, const_ref element)
-    : _begin(std::make_shared<Node>())
-    , _end  (std::make_shared<Node>())
+    : _dummy(std::make_shared<Node>())
     , _size (0)
 {
-    _begin->next = _end;
-    _end->prev = _begin;
+    _dummy->next = _dummy;
+    _dummy->prev = _dummy;
     
     insert(end(), n, element);
 }
@@ -251,12 +247,11 @@ LinkedList<T>::LinkedList(size_type n, const_ref element)
  */
 template <class T>
 LinkedList<T>::LinkedList(iterator, iterator)
-    : _begin(std::make_shared<Node>())
-    , _end  (std::make_shared<Node>())
+    : _dummy(std::make_shared<Node>())
     , _size (0)
 {
-    _begin->next = _end;
-    _end->prev = _begin;
+    _dummy->next = _dummy;
+    _dummy->prev = _dummy;
 }
 
 
@@ -272,12 +267,11 @@ LinkedList<T>::LinkedList(iterator, iterator)
  */
 template <class T>
 LinkedList<T>::LinkedList(const LinkedList<T>& rhs)
-    : _begin(std::make_shared<Node>())
-    , _end  (std::make_shared<Node>())
+    : _dummy(std::make_shared<Node>())
     , _size (0)
 {
-    _begin->next = _end;
-    _end->prev = _begin;
+    _dummy->next = _dummy;
+    _dummy->prev = _dummy;
     
     insert(end(), rhs.begin(), rhs.end());
 }
@@ -288,12 +282,11 @@ LinkedList<T>::LinkedList(const LinkedList<T>& rhs)
  */
 template <class T>
 LinkedList<T>::LinkedList(LinkedList<T>&&)
-    : _begin(std::make_shared<Node>())
-    , _end  (std::make_shared<Node>())
+    : _dummy(std::make_shared<Node>())
     , _size (0)
 {
-    _begin->next = _end;
-    _end->prev = _begin;
+    _dummy->next = _dummy;
+    _dummy->prev = _dummy;
 }
 
 
@@ -309,12 +302,11 @@ LinkedList<T>::LinkedList(LinkedList<T>&&)
  */
 template <class T>
 LinkedList<T>::LinkedList(std::initializer_list<T> il)
-    : _begin(std::make_shared<Node>())
-    , _end  (std::make_shared<Node>())
+    : _dummy(std::make_shared<Node>())
     , _size (0)
 {
-    _begin->next = _end;
-    _end->prev = _begin;
+    _dummy->next = _dummy;
+    _dummy->prev = _dummy;
     
     insert(end(), il);
 }
@@ -348,7 +340,7 @@ inline typename LinkedList<T>::iterator
 LinkedList<T>::begin() const
 {
     assert(!empty());
-    return _begin->next;
+    return _dummy->next;
 }
 
 
@@ -361,7 +353,7 @@ template <class T>
 inline typename LinkedList<T>::iterator
 LinkedList<T>::end() const
 {
-    return _end;
+    return _dummy;
 }
 
 
@@ -375,7 +367,7 @@ inline typename LinkedList<T>::const_iterator
 LinkedList<T>::cbegin() const
 {
     assert(!empty());
-    return const_iterator(_begin->next);
+    return const_iterator(_dummy->next);
 }
 
 
@@ -388,7 +380,7 @@ template <class T>
 inline typename LinkedList<T>::const_iterator
 LinkedList<T>::cend() const
 {
-    return const_iterator(_end);
+    return const_iterator(_dummy);
 }
 
 
@@ -403,7 +395,7 @@ inline typename LinkedList<T>::reverse_iterator
 LinkedList<T>::rbegin() const
 {
     assert(!empty());
-    return _end->prev;
+    return _dummy->prev;
 }
 
 
@@ -417,7 +409,7 @@ template <class T>
 inline typename LinkedList<T>::reverse_iterator
 LinkedList<T>::rend() const
 {
-    return _begin;
+    return _dummy;
 }
 
 
@@ -432,7 +424,7 @@ inline typename LinkedList<T>::const_reverse_iterator
 LinkedList<T>::crbegin() const
 {
     assert(!empty());
-    return _end->prev;
+    return _dummy->prev;
 }
 
 
@@ -446,7 +438,7 @@ template <class T>
 inline typename LinkedList<T>::const_reverse_iterator
 LinkedList<T>::crend() const
 {
-    return _begin;
+    return _dummy;
 }
 
 
@@ -491,7 +483,7 @@ inline T&
 LinkedList<T>::front() const
 {
     assert(!empty());
-    return _begin->next->data;
+    return _dummy->next->data;
 }
 
 
@@ -505,7 +497,7 @@ inline T&
 LinkedList<T>::last() const
 {
     assert(!empty());
-    return _end->prev->data;
+    return _dummy->prev->data;
 }
 
 
@@ -521,7 +513,7 @@ LinkedList<T>::at(size_type index) const
 {
     assert (index < _size);
     
-    auto node = _begin->next;
+    auto node = _dummy->next;
     while (index-- > 0)
         node = node->next;
     
@@ -567,21 +559,18 @@ template <class T>
 void
 LinkedList<T>::push_front(const T& element)
 {
-    std::shared_ptr<Node> node = std::make_shared<Node> (element);
+    std::shared_ptr<Node> node = std::make_shared<Node>(element);
     
     if (empty()) {
-        _begin->next = node;
-        _end->prev = node;
-        node->next = _end;
-        _end->prev = node;
+        _dummy->prev = node;
+        node->next = _dummy;
     } else {
-        _begin->next->prev = node;
-        node->next = _begin->next;
-        _begin->next = node;
+        _dummy->next->prev = node;
+        node->next = _dummy->next;
     }
     
-    node->prev = _begin;
-    _begin->next = node;
+    node->prev = _dummy;
+    _dummy->next = node;
     
     ++_size;
 }
@@ -603,21 +592,18 @@ template <class T>
 void
 LinkedList<T>::push_front(T&& element)
 {
-    std::shared_ptr<Node> node = std::make_shared<Node> (std::move(element));
+    std::shared_ptr<Node> node = std::make_shared<Node>(std::move(element));
     
     if (empty()) {
-        _begin->next = node;
-        _end->prev = node;
-        node->next = _end;
-        _end->prev = node;
+        _dummy->prev = node;
+        node->next = _dummy;
     } else {
-        _begin->next->prev = node;
-        node->next = _begin->next;
-        _begin->next = node;
+        _dummy->next->prev = node;
+        node->next = _dummy->next;
     }
     
-    node->prev = _begin;
-    _begin->next = node;
+    node->prev = _dummy;
+    _dummy->next = node;
     
     ++_size;
 }
@@ -642,18 +628,15 @@ LinkedList<T>::push_back(const T& element)
     std::shared_ptr<Node> node = std::make_shared<Node>(element);
     
     if (empty()) {
-        _begin->next = node;
-        _end->prev = node;
-        node->prev = _begin;
-        _begin->next = node;
+        _dummy->next = node;
+        node->prev = _dummy;
     } else {
-        _end->prev->next = node;
-        node->prev = _end->prev;
-        _end->prev = node;
+        _dummy->prev->next = node;
+        node->prev = _dummy->prev;
     }
     
-    node->next = _end;
-    _end->prev = node;
+    node->next = _dummy;
+    _dummy->prev = node;
     
     ++_size;
 }
@@ -678,18 +661,15 @@ LinkedList<T>::push_back(T&& element)
     std::shared_ptr<Node> node = std::make_shared<Node>(std::move(element));
     
     if (empty()) {
-        _begin->next = node;
-        _end->prev = node;
-        node->prev = _begin;
-        _begin->next = node;
+        _dummy->next = node;
+        node->prev = _dummy;
     } else {
-        _end->prev->next = node;
-        node->prev = _end->prev;
-        _end->prev = node;
+        _dummy->prev->next = node;
+        node->prev = _dummy->prev;
     }
     
-    node->next = _end;
-    _end->prev = node;
+    node->next = _dummy;
+    _dummy->prev = node;
     
     ++_size;
 }
@@ -752,17 +732,11 @@ LinkedList<T>::pop_front()
 {
     assert(!empty());
     
-    T& element = _begin->next->data;
+    T& element = _dummy->next->data;
     --_size;
     
-    if (empty()) {
-        _begin->next = nullptr;
-        _end->prev = nullptr;
-    } else {
-        // auto old = _head; // should this be getting explicityly freed or something?
-        _begin->next = _begin->next->next;
-        _begin->next->prev = _begin;
-    }
+    _dummy->next = _dummy->next->next;
+    _dummy->next->prev = _dummy;
     
     return element;
 }
@@ -784,16 +758,11 @@ LinkedList<T>::pop_back()
 {
     assert(!empty());
     
-    T& element = _end->prev->data;
+    T& element = _dummy->prev->data;
     --_size;
     
-    if (empty()) {
-        _begin->next = nullptr;
-        _end->prev = nullptr;
-    } else {
-        _end->prev = _end->prev->prev;
-        _end->prev->next = _end;
-    }
+    _dummy->prev = _dummy->prev->prev;
+    _dummy->prev->next = _dummy;
     
     return element;
 }
@@ -880,10 +849,10 @@ template <class T>
 typename LinkedList<T>::iterator
 LinkedList<T>::insert(iterator pos, iterator first, iterator last)
 {
-    while (--last != first)
-        insert(pos, *last);
+    while (first != last)
+        insert(pos, *first++);
     
-    return insert(pos, *first);
+    return pos;
 }
 
 
@@ -960,7 +929,7 @@ LinkedList<T>::erase(iterator pos)
 
 
 /*
- Function: erase
+ Function: erase range
  Parameters:
   - first: An iterator pointing to the first element to be removed.
   - last: An iterator pointing to the element after the last element
@@ -1000,8 +969,8 @@ template <class T>
 void
 LinkedList<T>::swap(LinkedList<T>& rhs)
 {
-    std::swap(_begin, rhs._begin);
-    std::swap(_end, rhs._end);
+    std::swap(_dummy, rhs._dummy);
+    std::swap(_size, rhs._size);
 }
 
 
@@ -1021,6 +990,68 @@ LinkedList<T>::clear() noexcept
 {
     erase(begin(), end());
 }
+
+
+//void splice(const_iterator, LinkedList<T>&);                                       // Not yet implemented.
+//void splice(const_iterator, LinkedList<T>&&);                                      // Not yet implemented.
+//void splice(const_iterator, LinkedList<T>&, const_iterator);                       // Not yet implemented.
+//void splice(const_iterator, LinkedList<T>&&, const_iterator);                      // Not yet implemented.
+//void splice(const_iterator, LinkedList<T>&, const_iterator, const_iterator);       // Not yet implemented.
+//void splice(const_iterator, LinkedList<T>&&, const_iterator, const_iterator);      // Not yet implemented.
+
+
+
+template <class T>
+void
+LinkedList<T>::remove(const_ref element) {
+    erase(std::find(begin(), end(), element));
+}
+
+
+template <class T>
+template <class Predicate>
+void
+LinkedList<T>::remove_if(Predicate pred)
+{
+    for (auto it = begin(); it != end();) {
+        if (pred(*it))
+            erase(it++);
+        else
+            ++it;
+    }
+}
+
+//template <class Predicate>
+//void remove_if(Predicate);                                                     // Not yet implemented.
+//void unique();                                                                     // Not yet implemented.
+//template <class BinaryPredicate>
+//void unique(BinaryPredicate);                                                  // Not yet implemented.
+//void merge(LinkedList<T>&);                                                        // Not yet implemented.
+//void merge(LinkedList<T>&&);                                                       // Not yet implemented.
+//template <class Compare>
+//void merge(LinkedList<T>&, Compare);                                           // Not yet implemented.
+//template <class Compare>
+//void merge(LinkedList<T>&&, Compare);                                          // Not yet implemented.
+//void sort();                                                                       // Not yet implemented.
+//template <class Compare>
+//void sort(Compare);                                                            // Not yet implemented.
+//void reverse() noexcept;                                                           // Not yet implemented.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 #endif /* LinkedList_h */
