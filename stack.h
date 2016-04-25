@@ -1,5 +1,5 @@
 /*
- File:   LinkedList.h
+ File:   list.h
  Author: Kyle Thompson
  
  Purpose:
@@ -17,9 +17,9 @@
 #ifndef stack_h
 #define stack_h
 
-#include "LinkedList.h"
+#include "list.h"
 
-template <class T, class C = LinkedList<T>>
+template <class T, class C = list<T>>
 class stack {
     
 
