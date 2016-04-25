@@ -9,7 +9,8 @@
  Implementation:
   - A custom random access iterator is implemented for accessing and iterating through the
     elements. 
-  - Two dummy nodes are used to cleanly allow iterator functions like end() and rbegin().
+  - A single dummy node is used to simplify insertion and deletion operations as well as 
+    iterator functions like end() and rbegin().
  
  TODO:
   - Find out how to correctly use an allocator and use it.
