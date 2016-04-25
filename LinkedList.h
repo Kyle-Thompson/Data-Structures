@@ -62,9 +62,9 @@ private:
         {}
         
         // Constructor for data node.
-        Node(const_ref element)
-            : prev(nullptr)
-            , next(nullptr)
+        Node(const_ref element, std::shared_ptr<Node> prevptr, std::shared_ptr<Node> nextptr)
+            : prev(prevptr)
+            , next(nextptr)
             , data(element)
         {}
     };
@@ -159,8 +159,8 @@ public:
         void emplace_back(Args&&...);                                                  // Not yet implemented.
     template <class... Args>
         iterator emplace(const_iterator position, Args&&...);                          // Not yet implemented.
-    reference pop_front();
-    reference pop_back();
+    void pop_front();
+    void pop_back();
     iterator insert(iterator, const_ref);
     iterator insert(iterator, size_type, const_ref);
     iterator insert(iterator, iterator, iterator);
@@ -168,7 +168,7 @@ public:
     iterator insert(iterator, std::initializer_list<value_type>);
     iterator erase(iterator);
     iterator erase(iterator, iterator);
-    void swap(LinkedList<T>&);                                                         // No longer works.
+    void swap(LinkedList<T>&);                                                         // Unknown if working.
     void clear() noexcept;
     
     /* Operations */
@@ -178,9 +178,9 @@ public:
     void splice(const_iterator, LinkedList<T>&&, const_iterator);                      // Not yet implemented.
     void splice(const_iterator, LinkedList<T>&, const_iterator, const_iterator);       // Not yet implemented.
     void splice(const_iterator, LinkedList<T>&&, const_iterator, const_iterator);      // Not yet implemented.
-    void remove(const_ref);                                                            // Not yet implemented.
+    void remove(const_ref);
     template <class Predicate>
-        void remove_if(Predicate);                                                     // Not yet implemented.
+        void remove_if(Predicate);
     void unique();                                                                     // Not yet implemented.
     template <class BinaryPredicate>
         void unique(BinaryPredicate);                                                  // Not yet implemented.
@@ -559,17 +559,9 @@ template <class T>
 void
 LinkedList<T>::push_front(const T& element)
 {
-    std::shared_ptr<Node> node = std::make_shared<Node>(element);
+    auto node = std::make_shared<Node>(element, _dummy, _dummy->next);
     
-    if (empty()) {
-        _dummy->prev = node;
-        node->next = _dummy;
-    } else {
-        _dummy->next->prev = node;
-        node->next = _dummy->next;
-    }
-    
-    node->prev = _dummy;
+    _dummy->next->prev = node;
     _dummy->next = node;
     
     ++_size;
@@ -592,17 +584,9 @@ template <class T>
 void
 LinkedList<T>::push_front(T&& element)
 {
-    std::shared_ptr<Node> node = std::make_shared<Node>(std::move(element));
-    
-    if (empty()) {
-        _dummy->prev = node;
-        node->next = _dummy;
-    } else {
-        _dummy->next->prev = node;
-        node->next = _dummy->next;
-    }
-    
-    node->prev = _dummy;
+    auto node = std::make_shared<Node>(std::move(element), _dummy, _dummy->next);
+
+    _dummy->next->prev = node;
     _dummy->next = node;
     
     ++_size;
@@ -625,17 +609,9 @@ void
 LinkedList<T>::push_back(const T& element)
 {
 
-    std::shared_ptr<Node> node = std::make_shared<Node>(element);
-    
-    if (empty()) {
-        _dummy->next = node;
-        node->prev = _dummy;
-    } else {
-        _dummy->prev->next = node;
-        node->prev = _dummy->prev;
-    }
-    
-    node->next = _dummy;
+    auto node = std::make_shared<Node>(element, _dummy->prev, _dummy);
+
+    _dummy->prev->next = node;
     _dummy->prev = node;
     
     ++_size;
@@ -658,17 +634,9 @@ template <class T>
 void
 LinkedList<T>::push_back(T&& element)
 {
-    std::shared_ptr<Node> node = std::make_shared<Node>(std::move(element));
+    auto node = std::make_shared<Node>(std::move(element), _dummy->prev, _dummy);
     
-    if (empty()) {
-        _dummy->next = node;
-        node->prev = _dummy;
-    } else {
-        _dummy->prev->next = node;
-        node->prev = _dummy->prev;
-    }
-    
-    node->next = _dummy;
+    _dummy->prev->next = node;
     _dummy->prev = node;
     
     ++_size;
@@ -719,7 +687,7 @@ LinkedList<T>::emplace_back(Args&&... args)
 /*
  Function: pop_front
  Parameters: None
- Return value: The element formerly in the first position in the list.
+ Return value: None
  
  Description:
     Removes the first element in the list from the list and returns it.
@@ -727,25 +695,24 @@ LinkedList<T>::emplace_back(Args&&... args)
  Complexity: O(1) -> Constant.
  */
 template <class T>
-T&
+void
 LinkedList<T>::pop_front()
 {
     assert(!empty());
     
-    T& element = _dummy->next->data;
-    --_size;
+    //T& element = _dummy->next->data;
     
     _dummy->next = _dummy->next->next;
     _dummy->next->prev = _dummy;
     
-    return element;
+    --_size;
 }
 
 
 /*
  Function: pop_back
  Parameters: None
- Return value: The element formerly in the last position in the list.
+ Return value: None
  
  Description:
     Removes the first element in the list from the list and returns it.
@@ -753,18 +720,17 @@ LinkedList<T>::pop_front()
  Complexity: O(1) -> Constant.
  */
 template <class T>
-T&
+void
 LinkedList<T>::pop_back()
 {
     assert(!empty());
     
-    T& element = _dummy->prev->data;
-    --_size;
+    //T& element = _dummy->prev->data;
     
     _dummy->prev = _dummy->prev->prev;
     _dummy->prev->next = _dummy;
     
-    return element;
+    --_size;
 }
 
 
@@ -786,13 +752,8 @@ template <class T>
 typename LinkedList<T>::iterator
 LinkedList<T>::insert(iterator pos, const T& element)
 {
-    std::shared_ptr<Node> node = std::make_shared<Node>(element);
+    std::shared_ptr<Node> node = std::make_shared<Node>(element, pos.itr->prev, pos.itr);
     
-    // Assign node's next and prev.
-    node->prev = pos.itr->prev;
-    node->next = pos.itr;
-    
-    // Reassign node's neighbours to point to node.
     node->prev->next = node;
     node->next->prev = node;
     
@@ -888,7 +849,7 @@ LinkedList<T>::insert(iterator pos, rvalue_ref element)
     Adds all the items in an initializer list to the list at a given 
     position.
  
- Complexity: O(|init_list|) -> Linear in the size of the initializer list.
+ Complexity: O(|il|) -> Linear in the size of the initializer list.
  */
 template <class T>
 typename LinkedList<T>::iterator
@@ -1000,14 +961,39 @@ LinkedList<T>::clear() noexcept
 //void splice(const_iterator, LinkedList<T>&&, const_iterator, const_iterator);      // Not yet implemented.
 
 
-
+/*
+ Function: remove
+ Parameters:
+  - element: The value of the element to be removed.
+ Return value: None
+ 
+ Description:
+    Removes the first occurence of element in the list.
+ 
+ Complexity: O(_size) -> Linear in the index of the element or the size 
+                         of the list if the element does not exist.
+ */
 template <class T>
 void
 LinkedList<T>::remove(const_ref element) {
-    erase(std::find(begin(), end(), element));
+    auto it = std::find(begin(), end(), element);
+    
+    if (it != end())
+        erase(it);
 }
 
 
+/*
+ Function: remove if
+ Parameters:
+  - pred: The predicate used to test all elements in the list.
+ Return value: None
+ 
+ Description:
+    Removes from the list all elements that satisfy a predicate.
+ 
+ Complexity: O(_size) -> Linear in the size of the list.
+ */
 template <class T>
 template <class Predicate>
 void
@@ -1021,8 +1007,7 @@ LinkedList<T>::remove_if(Predicate pred)
     }
 }
 
-//template <class Predicate>
-//void remove_if(Predicate);                                                     // Not yet implemented.
+
 //void unique();                                                                     // Not yet implemented.
 //template <class BinaryPredicate>
 //void unique(BinaryPredicate);                                                  // Not yet implemented.
@@ -1032,9 +1017,31 @@ LinkedList<T>::remove_if(Predicate pred)
 //void merge(LinkedList<T>&, Compare);                                           // Not yet implemented.
 //template <class Compare>
 //void merge(LinkedList<T>&&, Compare);                                          // Not yet implemented.
-//void sort();                                                                       // Not yet implemented.
+
+
 //template <class Compare>
 //void sort(Compare);                                                            // Not yet implemented.
+
+/*
+ Function: sort
+ Parameters: None
+ Return value: None
+ 
+ Description: Sorts the elements in the list.
+ 
+ Complexity: O(nlogn) -> Where n is _size.
+ */
+template <class T>
+void
+LinkedList<T>::sort()
+{
+    
+}
+
+
+
+
+
 //void reverse() noexcept;                                                           // Not yet implemented.
 
 
