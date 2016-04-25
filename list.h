@@ -1,5 +1,5 @@
 /*
- File:   LinkedList.h
+ File:   list.h
  Author: Kyle Thompson
  
  Purpose:
@@ -28,8 +28,8 @@
  */
 
 
-#ifndef LinkedList_h
-#define LinkedList_h
+#ifndef list_h
+#define list_h
 
 #include <algorithm>   // move
 #include <cassert>     // assert
@@ -39,7 +39,7 @@
 #include <utility>     // swap
 
 template <class T>
-class LinkedList {
+class list {
     
 /* Type definitions */
 public:
@@ -84,7 +84,7 @@ public:
                                                T& >                              // reference
     {
     
-        friend class LinkedList<T>;
+        friend class list<T>;
         
     /* Iterator data members */
     private:
@@ -118,16 +118,16 @@ private:
 /* Member functions */
 public:
     /* Constructors */
-    LinkedList();
-    LinkedList(size_type, const_ref);
-    LinkedList(iterator, iterator);                                                    // Not yet implemented.
-    LinkedList(const LinkedList<T>&);
-    LinkedList(LinkedList<T>&&);                                                       // Not yet implemented.
-    LinkedList(std::initializer_list<T>);
-    ~LinkedList();
+    list();
+    list(size_type, const_ref);
+    list(iterator, iterator);                                                    // Not yet implemented.
+    list(const list<T>&);
+    list(list<T>&&);                                                       // Not yet implemented.
+    list(std::initializer_list<T>);
+    ~list();
     
     // where to even put this assignment operator?
-    //LinkedList<T>& operator=(LinkedList<T>);                                           // Not yet implemented.
+    //list<T>& operator=(list<T>);                                           // Not yet implemented.
     
     /* Iterators */
     iterator begin() const;
@@ -172,28 +172,28 @@ public:
     iterator insert(iterator, std::initializer_list<value_type>);
     iterator erase(iterator);
     iterator erase(iterator, iterator);
-    void swap(LinkedList<T>&);                                                         // Unknown if working.
+    void swap(list<T>&);                                                               // Unknown if working.
     void clear() noexcept;
     
     /* Operations */
-    void splice(const_iterator, LinkedList<T>&);                                       // Not yet implemented.
-    void splice(const_iterator, LinkedList<T>&&);                                      // Not yet implemented.
-    void splice(const_iterator, LinkedList<T>&, const_iterator);                       // Not yet implemented.
-    void splice(const_iterator, LinkedList<T>&&, const_iterator);                      // Not yet implemented.
-    void splice(const_iterator, LinkedList<T>&, const_iterator, const_iterator);       // Not yet implemented.
-    void splice(const_iterator, LinkedList<T>&&, const_iterator, const_iterator);      // Not yet implemented.
+    void splice(const_iterator, list<T>&);                                             // Not yet implemented.
+    void splice(const_iterator, list<T>&&);                                            // Not yet implemented.
+    void splice(const_iterator, list<T>&, const_iterator);                             // Not yet implemented.
+    void splice(const_iterator, list<T>&&, const_iterator);                            // Not yet implemented.
+    void splice(const_iterator, list<T>&, const_iterator, const_iterator);             // Not yet implemented.
+    void splice(const_iterator, list<T>&&, const_iterator, const_iterator);            // Not yet implemented.
     void remove(const_ref);
     template <class Predicate>
         void remove_if(Predicate);
     void unique();                                                                     // Not yet implemented.
     template <class BinaryPredicate>
         void unique(BinaryPredicate);                                                  // Not yet implemented.
-    void merge(LinkedList<T>&);                                                        // Not yet implemented.
-    void merge(LinkedList<T>&&);                                                       // Not yet implemented.
+    void merge(list<T>&);                                                              // Not yet implemented.
+    void merge(list<T>&&);                                                             // Not yet implemented.
     template <class Compare>
-        void merge(LinkedList<T>&, Compare);                                           // Not yet implemented.
+        void merge(list<T>&, Compare);                                                 // Not yet implemented.
     template <class Compare>
-        void merge(LinkedList<T>&&, Compare);                                          // Not yet implemented.
+        void merge(list<T>&&, Compare);                                                // Not yet implemented.
     void sort();                                                                       // Not yet implemented.
     template <class Compare>
         void sort(Compare);                                                            // Not yet implemented.
@@ -214,13 +214,10 @@ public:
     Initializes a default, empty linked list.
  */
 template <class T>
-LinkedList<T>::LinkedList()
+list<T>::list()
     : _dummy(new Node() /*std::make_shared<Node>()*/)
     , _size (0)
-{
-//    _dummy->next = _dummy;
-//    _dummy->prev = _dummy;
-}
+{}
 
 
 /*
@@ -235,13 +232,10 @@ LinkedList<T>::LinkedList()
     Initializes a list with n copies of element.
  */
 template <class T>
-LinkedList<T>::LinkedList(size_type n, const_ref element)
+list<T>::list(size_type n, const_ref element)
     : _dummy(new Node() /*std::make_shared<Node>()*/)
     , _size (0)
 {
-//    _dummy->next = _dummy;
-//    _dummy->prev = _dummy;
-    
     insert(end(), n, element);
 }
 
@@ -250,13 +244,10 @@ LinkedList<T>::LinkedList(size_type n, const_ref element)
  Function: range constructor.
  */
 template <class T>
-LinkedList<T>::LinkedList(iterator, iterator)
+list<T>::list(iterator, iterator)
     : _dummy(new Node() /*std::make_shared<Node>()*/)
     , _size (0)
-{
-//    _dummy->next = _dummy;
-//    _dummy->prev = _dummy;
-}
+{}
 
 
 /*
@@ -270,13 +261,10 @@ LinkedList<T>::LinkedList(iterator, iterator)
     linked list.
  */
 template <class T>
-LinkedList<T>::LinkedList(const LinkedList<T>& rhs)
+list<T>::list(const list<T>& rhs)
     : _dummy(new Node() /*std::make_shared<Node>()*/)
     , _size (0)
 {
-//    _dummy->next = _dummy;
-//    _dummy->prev = _dummy;
-    
     insert(end(), rhs.begin(), rhs.end());
 }
 
@@ -285,13 +273,10 @@ LinkedList<T>::LinkedList(const LinkedList<T>& rhs)
  Function: move constructor.
  */
 template <class T>
-LinkedList<T>::LinkedList(LinkedList<T>&&)
+list<T>::list(list<T>&&)
     : _dummy(new Node() /*std::make_shared<Node>()*/)
     , _size (0)
-{
-//    _dummy->next = _dummy;
-//    _dummy->prev = _dummy;
-}
+{}
 
 
 /*
@@ -305,13 +290,10 @@ LinkedList<T>::LinkedList(LinkedList<T>&&)
     Initializes a list based on an initializer list.
  */
 template <class T>
-LinkedList<T>::LinkedList(std::initializer_list<T> il)
+list<T>::list(std::initializer_list<T> il)
     : _dummy(new Node() /*std::make_shared<Node>()*/)
     , _size (0)
 {
-//    _dummy->next = _dummy;
-//    _dummy->prev = _dummy;
-    
     insert(end(), il);
 }
 
@@ -325,7 +307,7 @@ LinkedList<T>::LinkedList(std::initializer_list<T> il)
     Clears all nodes and associated data within the linked list.
  */
 template <class T>
-LinkedList<T>::~LinkedList()
+list<T>::~list()
 {
     clear();
     delete _dummy;
@@ -341,8 +323,8 @@ LinkedList<T>::~LinkedList()
  Return value: An iterator to the first position in the list.
  */
 template <class T>
-inline typename LinkedList<T>::iterator
-LinkedList<T>::begin() const
+inline typename list<T>::iterator
+list<T>::begin() const
 {
     assert(!empty());
     return _dummy->next;
@@ -355,8 +337,8 @@ LinkedList<T>::begin() const
  Return value: An iterator to the past-the-end position in the list.
  */
 template <class T>
-inline typename LinkedList<T>::iterator
-LinkedList<T>::end() const
+inline typename list<T>::iterator
+list<T>::end() const
 {
     return _dummy;
 }
@@ -368,8 +350,8 @@ LinkedList<T>::end() const
  Return value: A const iterator to the first position in the list.
  */
 template <class T>
-inline typename LinkedList<T>::const_iterator
-LinkedList<T>::cbegin() const
+inline typename list<T>::const_iterator
+list<T>::cbegin() const
 {
     assert(!empty());
     return const_iterator(_dummy->next);
@@ -382,8 +364,8 @@ LinkedList<T>::cbegin() const
  Return value: A const iterator to the past-the-end position in the list.
  */
 template <class T>
-inline typename LinkedList<T>::const_iterator
-LinkedList<T>::cend() const
+inline typename list<T>::const_iterator
+list<T>::cend() const
 {
     return const_iterator(_dummy);
 }
@@ -396,8 +378,8 @@ LinkedList<T>::cend() const
                list. (Last element in the real list.)
  */
 template <class T>
-inline typename LinkedList<T>::reverse_iterator
-LinkedList<T>::rbegin() const
+inline typename list<T>::reverse_iterator
+list<T>::rbegin() const
 {
     assert(!empty());
     return _dummy->prev;
@@ -411,8 +393,8 @@ LinkedList<T>::rbegin() const
                reversed list. (One before first position in real list.)
  */
 template <class T>
-inline typename LinkedList<T>::reverse_iterator
-LinkedList<T>::rend() const
+inline typename list<T>::reverse_iterator
+list<T>::rend() const
 {
     return _dummy;
 }
@@ -425,8 +407,8 @@ LinkedList<T>::rend() const
                reversed list. (Last element in the real list.)
  */
 template <class T>
-inline typename LinkedList<T>::const_reverse_iterator
-LinkedList<T>::crbegin() const
+inline typename list<T>::const_reverse_iterator
+list<T>::crbegin() const
 {
     assert(!empty());
     return _dummy->prev;
@@ -440,8 +422,8 @@ LinkedList<T>::crbegin() const
                the reversed list. (One before first position in real list.)
  */
 template <class T>
-inline typename LinkedList<T>::const_reverse_iterator
-LinkedList<T>::crend() const
+inline typename list<T>::const_reverse_iterator
+list<T>::crend() const
 {
     return _dummy;
 }
@@ -457,7 +439,7 @@ LinkedList<T>::crend() const
  */
 template <class T>
 inline bool
-LinkedList<T>::empty() const
+list<T>::empty() const
 {
     return _size == 0;
 }
@@ -470,7 +452,7 @@ LinkedList<T>::empty() const
  */
 template <class T>
 inline std::size_t
-LinkedList<T>::size() const
+list<T>::size() const
 {
     return _size;
 }
@@ -485,7 +467,7 @@ LinkedList<T>::size() const
  */
 template <class T>
 inline T&
-LinkedList<T>::front() const
+list<T>::front() const
 {
     assert(!empty());
     return _dummy->next->data;
@@ -499,7 +481,7 @@ LinkedList<T>::front() const
  */
 template <class T>
 inline T&
-LinkedList<T>::last() const
+list<T>::last() const
 {
     assert(!empty());
     return _dummy->prev->data;
@@ -514,7 +496,7 @@ LinkedList<T>::last() const
  */
 template <class T>
 T&
-LinkedList<T>::at(size_type index) const
+list<T>::at(size_type index) const
 {
     assert (index < _size);
     
@@ -534,7 +516,7 @@ LinkedList<T>::at(size_type index) const
  */
 template <class T>
 inline T&
-LinkedList<T>::operator[](size_type index) const
+list<T>::operator[](size_type index) const
 {
     return at(index);
 }
@@ -562,7 +544,7 @@ LinkedList<T>::operator[](size_type index) const
  */
 template <class T>
 void
-LinkedList<T>::push_front(const T& element)
+list<T>::push_front(const T& element)
 {
     auto node = new Node(element, _dummy, _dummy->next);
     
@@ -587,7 +569,7 @@ LinkedList<T>::push_front(const T& element)
  */
 template <class T>
 void
-LinkedList<T>::push_front(T&& element)
+list<T>::push_front(T&& element)
 {
     auto node = new Node(std::move(element), _dummy, _dummy->next);
 
@@ -611,7 +593,7 @@ LinkedList<T>::push_front(T&& element)
  */
 template <class T>
 void
-LinkedList<T>::push_back(const T& element)
+list<T>::push_back(const T& element)
 {
 
     auto node = new Node(element, _dummy->prev, _dummy);
@@ -637,7 +619,7 @@ LinkedList<T>::push_back(const T& element)
  */
 template <class T>
 void
-LinkedList<T>::push_back(T&& element)
+list<T>::push_back(T&& element)
 {
     auto node = new Node(std::move(element), _dummy->prev, _dummy);
     
@@ -662,7 +644,7 @@ LinkedList<T>::push_back(T&& element)
 template <class T>
 template <class... Args>
 void
-LinkedList<T>::emplace_front(Args&&... args)
+list<T>::emplace_front(Args&&... args)
 {
     // TODO: Fill in function definition.
     // Likely needs an allocator to work.
@@ -683,7 +665,7 @@ LinkedList<T>::emplace_front(Args&&... args)
 template <class T>
 template <class... Args>
 void
-LinkedList<T>::emplace_back(Args&&... args)
+list<T>::emplace_back(Args&&... args)
 {
     // TODO: Fill in function definition.
 }
@@ -701,7 +683,7 @@ LinkedList<T>::emplace_back(Args&&... args)
  */
 template <class T>
 void
-LinkedList<T>::pop_front()
+list<T>::pop_front()
 {
     erase(begin());
 }
@@ -719,7 +701,7 @@ LinkedList<T>::pop_front()
  */
 template <class T>
 void
-LinkedList<T>::pop_back()
+list<T>::pop_back()
 {
     erase(iterator(_dummy->prev));
 }
@@ -740,8 +722,8 @@ LinkedList<T>::pop_back()
  Complexity: O(1) -> Constant.
  */
 template <class T>
-typename LinkedList<T>::iterator
-LinkedList<T>::insert(iterator pos, const T& element)
+typename list<T>::iterator
+list<T>::insert(iterator pos, const T& element)
 {
     auto node = new Node(element, pos.itr->prev, pos.itr);
     
@@ -770,8 +752,8 @@ LinkedList<T>::insert(iterator pos, const T& element)
  Complexity: O(n) -> Linear in number of elements to be inserted.
  */
 template <class T>
-typename LinkedList<T>::iterator
-LinkedList<T>::insert(iterator pos, size_type n, const_ref element)
+typename list<T>::iterator
+list<T>::insert(iterator pos, size_type n, const_ref element)
 {
     while (--n > 0)
         insert(pos, element);
@@ -798,8 +780,8 @@ LinkedList<T>::insert(iterator pos, size_type n, const_ref element)
                                      between first and last.
  */
 template <class T>
-typename LinkedList<T>::iterator
-LinkedList<T>::insert(iterator pos, iterator first, iterator last)
+typename list<T>::iterator
+list<T>::insert(iterator pos, iterator first, iterator last)
 {
     while (first != last)
         insert(pos, *first++);
@@ -822,8 +804,8 @@ LinkedList<T>::insert(iterator pos, iterator first, iterator last)
  Complexity: O(1) -> Constant.
  */
 template <class T>
-typename LinkedList<T>::iterator
-LinkedList<T>::insert(iterator pos, rvalue_ref element)
+typename list<T>::iterator
+list<T>::insert(iterator pos, rvalue_ref element)
 {
     return insert(pos, std::move(element));
 }
@@ -843,8 +825,8 @@ LinkedList<T>::insert(iterator pos, rvalue_ref element)
  Complexity: O(|il|) -> Linear in the size of the initializer list.
  */
 template <class T>
-typename LinkedList<T>::iterator
-LinkedList<T>::insert(iterator pos, std::initializer_list<T> il)
+typename list<T>::iterator
+list<T>::insert(iterator pos, std::initializer_list<T> il)
 {
     for (auto it : il)
         insert(pos, it);
@@ -866,8 +848,8 @@ LinkedList<T>::insert(iterator pos, std::initializer_list<T> il)
  Complexity: O(1) -> Constant.
  */
 template <class T>
-typename LinkedList<T>::iterator
-LinkedList<T>::erase(iterator pos)
+typename list<T>::iterator
+list<T>::erase(iterator pos)
 {
     auto node = pos.itr;
     
@@ -898,8 +880,8 @@ LinkedList<T>::erase(iterator pos)
                                      between first and last.
  */
 template <class T>
-typename LinkedList<T>::iterator
-LinkedList<T>::erase(iterator first, iterator last)
+typename list<T>::iterator
+list<T>::erase(iterator first, iterator last)
 {
     while (first != last)
         erase(first++);
@@ -921,7 +903,7 @@ LinkedList<T>::erase(iterator first, iterator last)
  */
 template <class T>
 void
-LinkedList<T>::swap(LinkedList<T>& rhs)
+list<T>::swap(list<T>& rhs)
 {
     std::swap(_dummy, rhs._dummy);
     std::swap(_size, rhs._size);
@@ -940,18 +922,18 @@ LinkedList<T>::swap(LinkedList<T>& rhs)
  */
 template <class T>
 inline void
-LinkedList<T>::clear() noexcept
+list<T>::clear() noexcept
 {
     erase(begin(), end());
 }
 
 
-//void splice(const_iterator, LinkedList<T>&);                                       // Not yet implemented.
-//void splice(const_iterator, LinkedList<T>&&);                                      // Not yet implemented.
-//void splice(const_iterator, LinkedList<T>&, const_iterator);                       // Not yet implemented.
-//void splice(const_iterator, LinkedList<T>&&, const_iterator);                      // Not yet implemented.
-//void splice(const_iterator, LinkedList<T>&, const_iterator, const_iterator);       // Not yet implemented.
-//void splice(const_iterator, LinkedList<T>&&, const_iterator, const_iterator);      // Not yet implemented.
+//void splice(const_iterator, list<T>&);                                       // Not yet implemented.
+//void splice(const_iterator, list<T>&&);                                      // Not yet implemented.
+//void splice(const_iterator, list<T>&, const_iterator);                       // Not yet implemented.
+//void splice(const_iterator, list<T>&&, const_iterator);                      // Not yet implemented.
+//void splice(const_iterator, list<T>&, const_iterator, const_iterator);       // Not yet implemented.
+//void splice(const_iterator, list<T>&&, const_iterator, const_iterator);      // Not yet implemented.
 
 
 /*
@@ -968,7 +950,7 @@ LinkedList<T>::clear() noexcept
  */
 template <class T>
 void
-LinkedList<T>::remove(const_ref element) {
+list<T>::remove(const_ref element) {
     auto it = std::find(begin(), end(), element);
     
     if (it != end())
@@ -990,7 +972,7 @@ LinkedList<T>::remove(const_ref element) {
 template <class T>
 template <class Predicate>
 void
-LinkedList<T>::remove_if(Predicate pred)
+list<T>::remove_if(Predicate pred)
 {
     for (auto it = begin(); it != end();) {
         if (pred(*it))
@@ -1004,12 +986,12 @@ LinkedList<T>::remove_if(Predicate pred)
 //void unique();                                                                     // Not yet implemented.
 //template <class BinaryPredicate>
 //void unique(BinaryPredicate);                                                  // Not yet implemented.
-//void merge(LinkedList<T>&);                                                        // Not yet implemented.
-//void merge(LinkedList<T>&&);                                                       // Not yet implemented.
+//void merge(list<T>&);                                                        // Not yet implemented.
+//void merge(list<T>&&);                                                       // Not yet implemented.
 //template <class Compare>
-//void merge(LinkedList<T>&, Compare);                                           // Not yet implemented.
+//void merge(list<T>&, Compare);                                           // Not yet implemented.
 //template <class Compare>
-//void merge(LinkedList<T>&&, Compare);                                          // Not yet implemented.
+//void merge(list<T>&&, Compare);                                          // Not yet implemented.
 
 
 //template <class Compare>
@@ -1026,7 +1008,7 @@ LinkedList<T>::remove_if(Predicate pred)
  */
 template <class T>
 void
-LinkedList<T>::sort()
+list<T>::sort()
 {
     
 }
@@ -1054,4 +1036,4 @@ LinkedList<T>::sort()
 
 
 
-#endif /* LinkedList_h */
+#endif /* list_h */
