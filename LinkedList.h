@@ -21,6 +21,9 @@
   - Find out if nodes are being correctly removed since they're shared pointers.
   - Find a way to set dummy next and prev to itself in Node constructor instead of list constructor.
   - Find out if ListIterator inheriting from std::iterator is even necessary.
+  - Have push front and back just call insert.
+  - Find out if _dummy can be a unique_ptr
+  - Removed templating from iterator.
  */
 
 
@@ -51,18 +54,18 @@ private:
     class Node {
         
     public:
-        std::shared_ptr<Node> prev;
-        std::shared_ptr<Node> next;
+        Node* prev;
+        Node* next;
         T data;
         
         // Constructor for dummy node.
         Node()
-            : prev(nullptr)
-            , next(nullptr)
+            : prev(this)
+            , next(this)
         {}
         
         // Constructor for data node.
-        Node(const_ref element, std::shared_ptr<Node> prevptr, std::shared_ptr<Node> nextptr)
+        Node(const_ref element, Node* prevptr, Node* nextptr)
             : prev(prevptr)
             , next(nextptr)
             , data(element)
@@ -84,11 +87,11 @@ public:
         
     /* Iterator data members */
     private:
-        std::shared_ptr<N> itr;
+        Node* itr;
         
     /* Iterator member functions */
     public:
-        ListIterator(std::shared_ptr<N> n) : itr(n) {}
+        ListIterator(Node* n) : itr(n) {}
         reference operator*()  { return itr->data; }
         reference operator->() { return itr->data; }
         ListIterator& operator++() { itr = itr->next; return *this; }
@@ -107,7 +110,7 @@ public:
 
 /* Data members */
 private:
-    std::shared_ptr<Node> _dummy;  // Dummy node between start and end of list.
+    Node* _dummy;  // Dummy node between start and end of list.
     size_type _size;               // Number of real elements in list.
     
     
@@ -211,11 +214,11 @@ public:
  */
 template <class T>
 LinkedList<T>::LinkedList()
-    : _dummy(std::make_shared<Node>())
+    : _dummy(new Node() /*std::make_shared<Node>()*/)
     , _size (0)
 {
-    _dummy->next = _dummy;
-    _dummy->prev = _dummy;
+//    _dummy->next = _dummy;
+//    _dummy->prev = _dummy;
 }
 
 
@@ -232,11 +235,11 @@ LinkedList<T>::LinkedList()
  */
 template <class T>
 LinkedList<T>::LinkedList(size_type n, const_ref element)
-    : _dummy(std::make_shared<Node>())
+    : _dummy(new Node() /*std::make_shared<Node>()*/)
     , _size (0)
 {
-    _dummy->next = _dummy;
-    _dummy->prev = _dummy;
+//    _dummy->next = _dummy;
+//    _dummy->prev = _dummy;
     
     insert(end(), n, element);
 }
@@ -247,11 +250,11 @@ LinkedList<T>::LinkedList(size_type n, const_ref element)
  */
 template <class T>
 LinkedList<T>::LinkedList(iterator, iterator)
-    : _dummy(std::make_shared<Node>())
+    : _dummy(new Node() /*std::make_shared<Node>()*/)
     , _size (0)
 {
-    _dummy->next = _dummy;
-    _dummy->prev = _dummy;
+//    _dummy->next = _dummy;
+//    _dummy->prev = _dummy;
 }
 
 
@@ -267,11 +270,11 @@ LinkedList<T>::LinkedList(iterator, iterator)
  */
 template <class T>
 LinkedList<T>::LinkedList(const LinkedList<T>& rhs)
-    : _dummy(std::make_shared<Node>())
+    : _dummy(new Node() /*std::make_shared<Node>()*/)
     , _size (0)
 {
-    _dummy->next = _dummy;
-    _dummy->prev = _dummy;
+//    _dummy->next = _dummy;
+//    _dummy->prev = _dummy;
     
     insert(end(), rhs.begin(), rhs.end());
 }
@@ -282,11 +285,11 @@ LinkedList<T>::LinkedList(const LinkedList<T>& rhs)
  */
 template <class T>
 LinkedList<T>::LinkedList(LinkedList<T>&&)
-    : _dummy(std::make_shared<Node>())
+    : _dummy(new Node() /*std::make_shared<Node>()*/)
     , _size (0)
 {
-    _dummy->next = _dummy;
-    _dummy->prev = _dummy;
+//    _dummy->next = _dummy;
+//    _dummy->prev = _dummy;
 }
 
 
@@ -302,11 +305,11 @@ LinkedList<T>::LinkedList(LinkedList<T>&&)
  */
 template <class T>
 LinkedList<T>::LinkedList(std::initializer_list<T> il)
-    : _dummy(std::make_shared<Node>())
+    : _dummy(new Node() /*std::make_shared<Node>()*/)
     , _size (0)
 {
-    _dummy->next = _dummy;
-    _dummy->prev = _dummy;
+//    _dummy->next = _dummy;
+//    _dummy->prev = _dummy;
     
     insert(end(), il);
 }
@@ -324,6 +327,7 @@ template <class T>
 LinkedList<T>::~LinkedList()
 {
     clear();
+    delete _dummy;
 }
 
 
@@ -559,7 +563,7 @@ template <class T>
 void
 LinkedList<T>::push_front(const T& element)
 {
-    auto node = std::make_shared<Node>(element, _dummy, _dummy->next);
+    auto node = new Node(element, _dummy, _dummy->next);
     
     _dummy->next->prev = node;
     _dummy->next = node;
@@ -584,7 +588,7 @@ template <class T>
 void
 LinkedList<T>::push_front(T&& element)
 {
-    auto node = std::make_shared<Node>(std::move(element), _dummy, _dummy->next);
+    auto node = new Node(std::move(element), _dummy, _dummy->next);
 
     _dummy->next->prev = node;
     _dummy->next = node;
@@ -609,7 +613,7 @@ void
 LinkedList<T>::push_back(const T& element)
 {
 
-    auto node = std::make_shared<Node>(element, _dummy->prev, _dummy);
+    auto node = new Node(element, _dummy->prev, _dummy);
 
     _dummy->prev->next = node;
     _dummy->prev = node;
@@ -634,7 +638,7 @@ template <class T>
 void
 LinkedList<T>::push_back(T&& element)
 {
-    auto node = std::make_shared<Node>(std::move(element), _dummy->prev, _dummy);
+    auto node = new Node(std::move(element), _dummy->prev, _dummy);
     
     _dummy->prev->next = node;
     _dummy->prev = node;
@@ -698,14 +702,7 @@ template <class T>
 void
 LinkedList<T>::pop_front()
 {
-    assert(!empty());
-    
-    //T& element = _dummy->next->data;
-    
-    _dummy->next = _dummy->next->next;
-    _dummy->next->prev = _dummy;
-    
-    --_size;
+    erase(begin());
 }
 
 
@@ -723,14 +720,7 @@ template <class T>
 void
 LinkedList<T>::pop_back()
 {
-    assert(!empty());
-    
-    //T& element = _dummy->prev->data;
-    
-    _dummy->prev = _dummy->prev->prev;
-    _dummy->prev->next = _dummy;
-    
-    --_size;
+    erase(iterator(_dummy->prev));
 }
 
 
@@ -752,7 +742,7 @@ template <class T>
 typename LinkedList<T>::iterator
 LinkedList<T>::insert(iterator pos, const T& element)
 {
-    std::shared_ptr<Node> node = std::make_shared<Node>(element, pos.itr->prev, pos.itr);
+    auto node = new Node(element, pos.itr->prev, pos.itr);
     
     node->prev->next = node;
     node->next->prev = node;
@@ -878,12 +868,14 @@ template <class T>
 typename LinkedList<T>::iterator
 LinkedList<T>::erase(iterator pos)
 {
-    auto& node = pos.itr;
+    auto node = pos.itr;
     
     node->prev->next = node->next;
     node->next->prev = node->prev;
     
     --_size;
+    
+    delete node;
     
     return ++pos;
 }
