@@ -1,5 +1,5 @@
 /*
- File:   list.h
+ File:   stack.h
  Author: Kyle Thompson
  
  Purpose:
