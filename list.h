@@ -32,6 +32,7 @@
 #include <algorithm>   // move
 #include <cassert>     // assert
 #include <cstddef>     // ptrdiff_t
+#include <functional>  // function
 #include <iterator>    // iterator
 #include <memory>      // allocator
 #include <utility>     // swap
@@ -192,10 +193,10 @@ public:
         void merge(list<T>&, Compare);                                                 // Not yet implemented.
     template <class Compare>
         void merge(list<T>&&, Compare);                                                // Not yet implemented.
-    void sort();                                                                       // Not yet implemented.
+    void sort();
     template <class Compare>
-        void sort(Compare);                                                            // Not yet implemented.
-    void reverse() noexcept;                                                           // Not yet tested.
+        void sort(Compare);
+    void reverse() noexcept;
     
 };
 
@@ -213,7 +214,7 @@ public:
  */
 template <class T>
 list<T>::list()
-    : _dummy(new Node() /*std::make_shared<Node>()*/)
+    : _dummy(new Node())
     , _size (0)
 {}
 
@@ -231,7 +232,7 @@ list<T>::list()
  */
 template <class T>
 list<T>::list(size_type n, const_ref element)
-    : _dummy(new Node() /*std::make_shared<Node>()*/)
+    : _dummy(new Node())
     , _size (0)
 {
     insert(end(), n, element);
@@ -243,7 +244,7 @@ list<T>::list(size_type n, const_ref element)
  */
 template <class T>
 list<T>::list(iterator, iterator)
-    : _dummy(new Node() /*std::make_shared<Node>()*/)
+    : _dummy(new Node())
     , _size (0)
 {}
 
@@ -260,7 +261,7 @@ list<T>::list(iterator, iterator)
  */
 template <class T>
 list<T>::list(const list<T>& rhs)
-    : _dummy(new Node() /*std::make_shared<Node>()*/)
+    : _dummy(new Node())
     , _size (0)
 {
     insert(end(), rhs.begin(), rhs.end());
@@ -272,7 +273,7 @@ list<T>::list(const list<T>& rhs)
  */
 template <class T>
 list<T>::list(list<T>&&)
-    : _dummy(new Node() /*std::make_shared<Node>()*/)
+    : _dummy(new Node())
     , _size (0)
 {}
 
@@ -289,7 +290,7 @@ list<T>::list(list<T>&&)
  */
 template <class T>
 list<T>::list(std::initializer_list<T> il)
-    : _dummy(new Node() /*std::make_shared<Node>()*/)
+    : _dummy(new Node())
     , _size (0)
 {
     insert(end(), il);
@@ -991,16 +992,66 @@ list<T>::remove_if(Predicate pred)
 //template <class Compare>
 //void merge(list<T>&&, Compare);                                          // Not yet implemented.
 
+/*
+ Function: sort
+ Parameters: None
+ Return value: None
+ 
+ Description: 
+    Sorts the elements in the list based on some comparator 
+    using quicksort.
+ 
+ Complexity: O(nlogn) -> Where n is _size.
+ */
+template <class T>
+template <class Compare>
+void
+list<T>::sort(Compare compare)
+{
+    std::function<void (iterator, iterator)> do_sort = [&](iterator first, iterator last){
+        if (first == last)
+            return;
+        
+        auto pivot = first--;
+        
+        auto move_left_of_pivot = [&](iterator it){
+            auto& node = it.itr;
+            auto& piv_node = pivot.itr;
+            
+            node->next->prev = node->prev;
+            node->prev->next = node->next;
+            
+            node->prev = piv_node->prev;
+            node->next = piv_node;
+            
+            piv_node->prev->next = node;
+            piv_node->prev = node;
+        };
+        
+        
+        for (auto itr = pivot; itr != last;) {
+            if (compare(itr, pivot))
+                move_left_of_pivot(itr++);
+            else
+                ++itr;
+        }
+        
+        do_sort(++first, pivot);
+        do_sort(++pivot, last);
+    };
+    
+    do_sort(begin(), end());
+    
+}
 
-//template <class Compare>
-//void sort(Compare);                                                            // Not yet implemented.
 
 /*
  Function: sort
  Parameters: None
  Return value: None
  
- Description: Sorts the elements in the list.
+ Description: 
+    Sorts the elements in the list.
  
  Complexity: O(nlogn) -> Where n is _size.
  */
@@ -1008,18 +1059,25 @@ template <class T>
 void
 list<T>::sort()
 {
-    
+    sort([](iterator it1, iterator it2){ return *it1 < *it2; });
 }
 
 
-
-
-
+/*
+ Function: reverse
+ Parameters: None
+ Return value: None
+ 
+ Description:
+    Reverses the list.
+ 
+ Complexity: O(_size) -> Linear in the size of the list.
+ */
 template <class T>
 void
 list<T>::reverse() noexcept
 {
-    auto move_front = [&](list<T>::iterator it){
+    auto move_front = [&](iterator it){
         auto& node = it.itr;
         
         node->next->prev = node->prev;
@@ -1035,20 +1093,6 @@ list<T>::reverse() noexcept
     for (auto it = begin(); it != end();)
         move_front(it++);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 #endif /* list_h */
