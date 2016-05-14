@@ -19,8 +19,6 @@
   - Make sure that elements being inserted by range aren't still references to one another.
   - Test with valgrind for memory leaks
   - Find a good category for operator=.
-  - Find out if nodes are being correctly removed since they're shared pointers.
-  - Find a way to set dummy next and prev to itself in Node constructor instead of list constructor.
   - Find out if ListIterator inheriting from std::iterator is even necessary.
   - Have push front and back just call insert.
   - Find out if _dummy can be a unique_ptr
@@ -77,7 +75,7 @@ private:
 /* Iterator */
 public:
     template <class N>
-    class ListIterator : public std::iterator< std::random_access_iterator_tag,  // category
+    class ListIterator : public std::iterator< std::bidirectional_iterator_tag,  // category
                                                T,                                // type
                                                std::ptrdiff_t,                   // distance
                                                T*,                               // pointer
@@ -197,7 +195,7 @@ public:
     void sort();                                                                       // Not yet implemented.
     template <class Compare>
         void sort(Compare);                                                            // Not yet implemented.
-    void reverse() noexcept;                                                           // Not yet implemented.
+    void reverse() noexcept;                                                           // Not yet tested.
     
 };
 
@@ -1017,9 +1015,26 @@ list<T>::sort()
 
 
 
-//void reverse() noexcept;                                                           // Not yet implemented.
-
-
+template <class T>
+void
+list<T>::reverse() noexcept
+{
+    auto move_front = [&](list<T>::iterator it){
+        auto& node = it.itr;
+        
+        node->next->prev = node->prev;
+        node->prev->next = node->next;
+        
+        node->next = _dummy->next;
+        node->prev = _dummy;
+        
+        _dummy->next = node;
+        node->next->prev = node;
+    };
+    
+    for (auto it = begin(); it != end();)
+        move_front(it++);
+}
 
 
 
