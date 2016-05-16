@@ -1,3 +1,6 @@
+Note that currently list.h is the only file worth looking at. The rest are barely built at all.
+
+
 / Linear
     / Arrays
         + Array
