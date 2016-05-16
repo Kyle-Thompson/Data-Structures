@@ -19,7 +19,7 @@
 
 #include "list.h"
 
-template <class T, class C = list<T>>
+template <class T, class C = list<T, Alloc>>
 class stack {
     
 

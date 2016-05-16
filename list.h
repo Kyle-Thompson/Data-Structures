@@ -24,7 +24,7 @@
   - Removed templating from iterator.
   - Find out how to properly do insert given an rvalue reference.
   - Have push_front and push_back use insert.
-  - Find out if const_iterator is correctly implemented.
+  - Find how to correctly implement const_iterator.
  */
 
 
@@ -77,30 +77,6 @@ private:
     
 /* Iterators */
 public:
-    /*
-    class base_iterator : public std::iterator< std::bidirectional_iterator_tag,  // category
-                                                T,                                // type
-                                                std::ptrdiff_t,                   // distance
-                                                T*,                               // pointer
-                                                T& >                              // reference
-    {
-     
-        friend class list<T, Alloc>;
-    
-    private:
-        Node* itr;
-    
-    public:
-        base_iterator(Node* n) : itr(n) {}
-        base_iterator& operator++() { itr = itr->next; return *this; }
-        base_iterator operator++(int) { base_iterator temp(*this); itr = itr->next; return temp; }
-        base_iterator& operator--() { itr = itr->prev; return *this; }
-        base_iterator operator--(int) { base_iterator temp(*this); itr = itr->prev; return temp; }
-        bool operator==(const iterator& rhs) { return itr->data == rhs.itr->data; }
-        bool operator!=(const iterator& rhs) { return !(itr == rhs.itr); }
-    };
-     */
-
     class iterator : public std::iterator< std::bidirectional_iterator_tag,  // category
                                            T,                                // type
                                            std::ptrdiff_t,                   // distance

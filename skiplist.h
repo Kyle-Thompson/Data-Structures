@@ -13,7 +13,7 @@
 
 #include <vector> // temporary
 
-template <class T>
+template <class T, class Alloc>
 class skiplist {
 
 /* Type definitions */
@@ -76,8 +76,8 @@ public:
 /*
  
  */
-template <class T>
-skiplist<T>::skiplist()
+template <class T, class Alloc>
+skiplist<T, Alloc>::skiplist()
 {
     _end = new Node();
     _start = new Node(_end);
