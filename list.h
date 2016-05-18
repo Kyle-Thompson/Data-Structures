@@ -7,7 +7,7 @@
     foundation for more linked list based data structures.
  
  Implementation:
-  - A custom random access iterator is implemented for accessing and iterating through the
+  - A custom bidirectional iterator is implemented for accessing and iterating through the
     elements. 
   - A single dummy node is used to simplify insertion and deletion operations as well as 
     iterator functions like end() and rbegin().
@@ -17,16 +17,22 @@
   - Test all functions.
   - Find out if there's a viable way to make insert and erase take a const iterator.
   - Make sure that elements being inserted by range aren't still references to one another.
-  - Test with valgrind for memory leaks
+  - Test with valgrind for memory leaks. Like for real. Who knows what's happened with these
+    allocators now.
   - Find a good category for operator=.
-  - Find out if ListIterator inheriting from std::iterator is even necessary.
-  - Find out if _dummy can be a unique_ptr
   - Removed templating from iterator.
   - Find out how to properly do insert given an rvalue reference.
   - Find how to correctly implement const_iterator.
-  - Update comments of similar functions (all different kinds of merge and such) to only be one descriptor comment.
-  - Find out what merge(&&, comp) needs different from merge(&, comp).
+  - Update comments of similar functions (all different kinds of merge and such) to only be 
+    one descriptor comment.
+  - Find out what merge(&&, comp) needs different from merge(&, comp). (Also insert& and &&)
   - Experiment with rvalue_ref node constructor.
+  - Find out if iterator -> should return a pointer or reference.
+  - See if an iterator hierarchy can be made. (list_iterator as base class to iterator and
+    const_iterator for max code reuse.) (or maybe just have const_iterator inherit from
+    iterator and overwrite operators * and ->.
+  - Find out why this works with clang but not g++.
+  - Find out how the current use of allocators actually works.
  */
 
 
@@ -48,6 +54,7 @@ class list {
 public:
     typedef std::size_t size_type;
     typedef T           value_type;
+    typedef T*          pointer;
     typedef T&          reference;
     typedef T&&         rvalue_ref;
     typedef const T&    const_ref;
@@ -79,63 +86,61 @@ private:
         Node(rvalue_ref element, Node* prevptr, Node* nextptr)
         : prev(prevptr)
         , next(nextptr)
-        , data(element)
+        , data(std::move(element))
         {}
     };
 
     
 /* Iterators */
 public:
-    class iterator : public std::iterator< std::bidirectional_iterator_tag,  // category
-                                           T,                                // type
-                                           std::ptrdiff_t,                   // distance
-                                           T*,                               // pointer
-                                           T& >                              // reference
-    {
+    class list_iterator {
+        
+    /* Iterator data members */
+    protected:
+        Node* itr;
+        
+    public:
+        list_iterator(Node* n) : itr(n) {}
+        bool operator==(const list_iterator& rhs) { return itr->data == rhs.itr->data; }
+        bool operator!=(const list_iterator& rhs) { return !(*this == rhs); }
+    };
+    
+    
+    class iterator : public list_iterator {
     
         friend class list<T, Alloc>;
         
-    /* Iterator data members */
     private:
-        Node* itr;
+        using list_iterator::itr;
         
     /* Iterator member functions */
     public:
-        iterator(Node* n) : itr(n) {}
+        iterator(Node* n) : list_iterator(n) {}
         reference operator*()  { return itr->data; }
         reference operator->() { return itr->data; }
         iterator& operator++() { itr = itr->next; return *this; }
         iterator operator++(int) { iterator temp(*this); itr = itr->next; return temp; }
         iterator& operator--() { itr = itr->prev; return *this; }
         iterator operator--(int) { iterator temp(*this); itr = itr->prev; return temp; }
-        bool operator==(const iterator& rhs) { return itr->data == rhs.itr->data; }
-        bool operator!=(const iterator& rhs) { return !(itr == rhs.itr); }
     };
     
-    class const_iterator : public std::iterator< std::bidirectional_iterator_tag,  // category
-                                                 T,                                // type
-                                                 std::ptrdiff_t,                   // distance
-                                                 T*,                               // pointer
-                                                 T& >                              // reference
-    {
+    
+    class const_iterator : public list_iterator {
         
         friend class list<T, Alloc>;
         
-    /* Iterator data members */
     private:
-        Node* itr;
+        using list_iterator::itr;
         
     /* Iterator member functions */
     public:
-        const_iterator(Node* n) : itr(n) {}
+        const_iterator(Node* n) : list_iterator(n) {}
         const_ref operator*()  { return itr->data; }
         const_ref operator->() { return itr->data; }
         const_iterator& operator++() { itr = itr->next; return *this; }
         const_iterator operator++(int) { const_iterator temp(*this); itr = itr->next; return temp; }
         const_iterator& operator--() { itr = itr->prev; return *this; }
         const_iterator operator--(int) { const_iterator temp(*this); itr = itr->prev; return temp; }
-        bool operator==(const iterator& rhs) { return itr->data == rhs.itr->data; }
-        bool operator!=(const iterator& rhs) { return !(itr == rhs.itr); }
     };
     
     typedef std::reverse_iterator<iterator> reverse_iterator;
@@ -150,13 +155,8 @@ private:
 
 /* Internal functions */
 private:
-    Node* _alloc_dummy() {                                                     // Not yet implemented.
-        //    typename Alloc::template rebind<Node>::other alloc;
-        //    auto node = alloc.allocate(1);
-        //    alloc.construct(node, element, pos.itr->prev, pos.itr);
-        
-        return new Node();
-    }
+    Node* _alloc_dummy();                                                     // Not yet implemented.
+    
     
 /* Member functions */
 public:
@@ -244,6 +244,26 @@ public:
     void reverse() noexcept;
     
 };
+
+
+
+// Internal functions
+
+/*
+ Function: allocate dummy
+ Parameters: None
+ Return value: Node*
+ */
+template <class T, class Alloc>
+typename list<T, Alloc>::Node*
+list<T, Alloc>::_alloc_dummy()
+{
+    typename Alloc::template rebind<Node>::other alloc;
+    auto node = alloc.allocate(1);
+    alloc.construct(node);
+    
+    return node;
+}
 
 
 
@@ -348,11 +368,10 @@ template <class T, class Alloc>
 list<T, Alloc>::~list()
 {
     clear();
-    delete _dummy;
     
-    //    typename Alloc::template rebind<Node>::other alloc;
-    //    alloc.destroy(_dummy);
-    //    alloc.deallocate(s, 1);
+    typename Alloc::template rebind<Node>::other alloc;
+    alloc.destroy(_dummy);
+    alloc.deallocate(_dummy, 1);
 }
 
 
@@ -747,11 +766,9 @@ template <class T, class Alloc>
 typename list<T, Alloc>::iterator
 list<T, Alloc>::insert(iterator pos, const T& element)
 {
-//    typename Alloc::template rebind<Node>::other alloc;
-//    auto node = alloc.allocate(1);
-//    alloc.construct(node, element, pos.itr->prev, pos.itr);
-    
-    auto node = new Node(element, pos.itr->prev, pos.itr);
+    typename Alloc::template rebind<Node>::other alloc;
+    auto node = alloc.allocate(1);
+    alloc.construct(node, element, pos.itr->prev, pos.itr);
     
     node->prev->next = node;
     node->next->prev = node;
@@ -881,9 +898,11 @@ list<T, Alloc>::erase(iterator pos)
     node->prev->next = node->next;
     node->next->prev = node->prev;
     
-    --_size;
+    typename Alloc::template rebind<Node>::other alloc;
+    alloc.destroy(node);
+    alloc.deallocate(node, 1);
     
-    delete node;
+    --_size;
     
     return ++pos;
 }
