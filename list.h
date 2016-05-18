@@ -23,8 +23,10 @@
   - Find out if _dummy can be a unique_ptr
   - Removed templating from iterator.
   - Find out how to properly do insert given an rvalue reference.
-  - Have push_front and push_back use insert.
   - Find how to correctly implement const_iterator.
+  - Update comments of similar functions (all different kinds of merge and such) to only be one descriptor comment.
+  - Find out what merge(&&, comp) needs different from merge(&, comp).
+  - Experiment with rvalue_ref node constructor.
  */
 
 
@@ -71,6 +73,13 @@ private:
             : prev(prevptr)
             , next(nextptr)
             , data(element)
+        {}
+        
+        // Constructor for data node given an rvalue ref.
+        Node(rvalue_ref element, Node* prevptr, Node* nextptr)
+        : prev(prevptr)
+        , next(nextptr)
+        , data(element)
         {}
     };
 
@@ -141,8 +150,13 @@ private:
 
 /* Internal functions */
 private:
-    Node* _alloc_dummy();                                                     // Not yet implemented.
-    
+    Node* _alloc_dummy() {                                                     // Not yet implemented.
+        //    typename Alloc::template rebind<Node>::other alloc;
+        //    auto node = alloc.allocate(1);
+        //    alloc.construct(node, element, pos.itr->prev, pos.itr);
+        
+        return new Node();
+    }
     
 /* Member functions */
 public:
@@ -245,7 +259,7 @@ public:
  */
 template <class T, class Alloc>
 list<T, Alloc>::list()
-    : _dummy(new Node())
+    : _dummy(_alloc_dummy())
 {}
 
 
@@ -262,7 +276,7 @@ list<T, Alloc>::list()
  */
 template <class T, class Alloc>
 list<T, Alloc>::list(size_type n, const_ref element)
-    : _dummy(new Node())
+    : _dummy(_alloc_dummy())
 {
     insert(end(), n, element);
 }
@@ -273,7 +287,7 @@ list<T, Alloc>::list(size_type n, const_ref element)
  */
 template <class T, class Alloc>
 list<T, Alloc>::list(iterator, iterator)
-    : _dummy(new Node())
+    : _dummy(_alloc_dummy())
 {}
 
 
@@ -289,7 +303,7 @@ list<T, Alloc>::list(iterator, iterator)
  */
 template <class T, class Alloc>
 list<T, Alloc>::list(const list<T, Alloc>& rhs)
-    : _dummy(new Node())
+    : _dummy(_alloc_dummy())
 {
     insert(end(), rhs.begin(), rhs.end());
 }
@@ -300,7 +314,7 @@ list<T, Alloc>::list(const list<T, Alloc>& rhs)
  */
 template <class T, class Alloc>
 list<T, Alloc>::list(list<T, Alloc>&&)
-    : _dummy(new Node())
+    : _dummy(_alloc_dummy())
 {}
 
 
@@ -316,7 +330,7 @@ list<T, Alloc>::list(list<T, Alloc>&&)
  */
 template <class T, class Alloc>
 list<T, Alloc>::list(std::initializer_list<T> il)
-    : _dummy(new Node())
+    : _dummy(_alloc_dummy())
 {
     insert(end(), il);
 }
@@ -335,6 +349,10 @@ list<T, Alloc>::~list()
 {
     clear();
     delete _dummy;
+    
+    //    typename Alloc::template rebind<Node>::other alloc;
+    //    alloc.destroy(_dummy);
+    //    alloc.deallocate(s, 1);
 }
 
 
@@ -570,12 +588,7 @@ template <class T, class Alloc>
 void
 list<T, Alloc>::push_front(const T& element)
 {
-    auto node = new Node(element, _dummy, _dummy->next);
-    
-    _dummy->next->prev = node;
-    _dummy->next = node;
-    
-    ++_size;
+    insert(begin(), element);
 }
 
 
@@ -595,12 +608,7 @@ template <class T, class Alloc>
 void
 list<T, Alloc>::push_front(T&& element)
 {
-    auto node = new Node(std::move(element), _dummy, _dummy->next);
-
-    _dummy->next->prev = node;
-    _dummy->next = node;
-    
-    ++_size;
+    insert(begin(), std::move(element));
 }
 
 
@@ -619,13 +627,7 @@ template <class T, class Alloc>
 void
 list<T, Alloc>::push_back(const T& element)
 {
-
-    auto node = new Node(element, _dummy->prev, _dummy);
-
-    _dummy->prev->next = node;
-    _dummy->prev = node;
-    
-    ++_size;
+    insert(end(), element);
 }
 
 
@@ -645,12 +647,7 @@ template <class T, class Alloc>
 void
 list<T, Alloc>::push_back(T&& element)
 {
-    auto node = new Node(std::move(element), _dummy->prev, _dummy);
-    
-    _dummy->prev->next = node;
-    _dummy->prev = node;
-    
-    ++_size;
+    insert(end(), std::move(element));
 }
 
 
@@ -750,6 +747,10 @@ template <class T, class Alloc>
 typename list<T, Alloc>::iterator
 list<T, Alloc>::insert(iterator pos, const T& element)
 {
+//    typename Alloc::template rebind<Node>::other alloc;
+//    auto node = alloc.allocate(1);
+//    alloc.construct(node, element, pos.itr->prev, pos.itr);
+    
     auto node = new Node(element, pos.itr->prev, pos.itr);
     
     node->prev->next = node;
@@ -1028,7 +1029,9 @@ list<T, Alloc>::unique()
 
 /*
  Function: unique
- Parameters: predicate
+ Parameters: 
+  - predicate: Determines whether or not an element should be
+               removed.
  Return value: None
  
  Description:
@@ -1054,23 +1057,101 @@ list<T, Alloc>::unique(BinaryPredicate predicate)
 }
 
 
-//void merge(list<T, Alloc>&);                                                        // Not yet implemented.
-//void merge(list<T, Alloc>&&);                                                       // Not yet implemented.
-//template <class Compare>
-//void merge(list<T, Alloc>&, Compare);                                           // Not yet implemented.
-//template <class Compare>
-//void merge(list<T, Alloc>&&, Compare);                                          // Not yet implemented.
+/*
+ Function: merge
+ Parameters:
+  - other: The other list being merged in.
+  - compare: Compares elements from the other list with 
+             this list.
+ Return value: None
+ 
+ Description:
+    
+ 
+ Complexity: O(_size + other._size) -> Linear in the combined 
+                                       size of both lists.
+ 
+ Notes:
+  - Functions like insert are not used here since it would
+    involve the destruction of an existing node and construction
+    of a new one, rather than reconnecting pointers.
+ */
+template <class T, class Alloc>
+void
+list<T, Alloc>::merge(list<T, Alloc>& other)
+{
+    merge(other, [](iterator other_el, iterator this_el){ return *other_el < *this_el; }); // TODO: rename these variables
+}
+
+
+template <class T, class Alloc>
+void
+list<T, Alloc>::merge(list<T, Alloc>&& other)
+{
+    merge(std::move(other), [](iterator other_el, iterator this_el){ return *other_el < *this_el; }); // TODO: rename these variables
+}
+
+
+template <class T, class Alloc>
+template <class Compare>
+void
+list<T, Alloc>::merge(list<T, Alloc>& other, Compare compare)
+{
+    // Helper function to insert other_el infront of this_el.
+    auto insert_before = [](iterator other_el, iterator this_el){
+        auto other_node = other_el.itr;
+        auto this_node = this_el.itr;
+        
+        other_node->prev->next = other_node->next;
+        other_node->next->prev = other_node->prev;
+        
+        other_node->next = this_node;
+        other_node->prev = this_node->prev;
+        
+        this_node->prev->next = other_node;
+        this_node->prev = other_node;
+    };
+    
+    auto itr = begin();
+    auto o_itr = other.begin();
+    
+    // Iterate over this list inserting other elements on successful compare.
+    for (; o_itr != other.end() && itr != end();) {
+        for (; !compare(o_itr, itr) && itr != end(); ++itr);
+        
+        if (itr != end()) {
+            insert_before(o_itr++, itr);
+            ++_size;
+            ++other._size;
+        }
+    }
+    
+    // If any elements remain in the other list, splice them into the end of this one.
+    if (o_itr != other.end())
+        splice(end(), other);
+}
+
+
+template <class T, class Alloc>
+template <class Compare>
+void
+list<T, Alloc>::merge(list<T, Alloc>&& other, Compare compare)
+{
+    merge(other, compare); // TODO: Find out what should really be done here.
+}
 
 
 /*
  Function: sort
- Parameters: None
+ Parameters:
+ - compare: Used to compare elements in the list.
  Return value: None
  
  Description:
- Sorts the elements in the list.
+ Sorts the elements in the list based on some comparator
+ using quicksort.
  
- Complexity: O(nlogn) -> Where n is _size.
+ Complexity: E(nlogn), O(n^2) -> Where n is _size.
  */
 template <class T, class Alloc>
 void
@@ -1080,17 +1161,6 @@ list<T, Alloc>::sort()
 }
 
 
-/*
- Function: sort
- Parameters: None
- Return value: None
- 
- Description: 
-    Sorts the elements in the list based on some comparator 
-    using quicksort.
- 
- Complexity: O(nlogn) -> Where n is _size.
- */
 template <class T, class Alloc>
 template <class Compare>
 void
