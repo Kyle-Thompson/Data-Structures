@@ -33,6 +33,7 @@
   - Find a better way to do push_front than the horrible hacky way it is now.
   - Make splice(pos, list) constant.
   - See if it's possible to remove the need for the self check in move_before.
+  - Find out what emplace constructed means and how it applies to range constructor.
  */
 
 
@@ -174,9 +175,9 @@ public:
     /* Constructors */
     list();
     list(size_type, const_ref);
-    list(iterator, iterator);                                                    // Not yet implemented.
+    list(iterator, iterator);
     list(const list<T, Alloc>&);
-    list(list<T, Alloc>&&);                                                       // Not yet implemented.
+    list(list<T, Alloc>&&);
     list(std::initializer_list<T>);
     ~list();
     
@@ -205,9 +206,9 @@ public:
     reference operator[](size_type) const;
     
     /* Modifiers */
-    void assign(iterator, iterator);                                                   // Not yet implemented.
-    void assign(size_type, const_ref);                                                 // Not yet implemented.
-    void assign(std::initializer_list<value_type>);                                    // Not yet implemented.
+    void assign(iterator, iterator);
+    void assign(size_type, const_ref);
+    void assign(std::initializer_list<value_type>);
     void push_front(const_ref);
     void push_front(rvalue_ref);
     void push_back(const_ref);
@@ -231,24 +232,24 @@ public:
     void clear() noexcept;
     
     /* Operations */
-    void splice(const_iterator, list<T, Alloc>&);                                             // Not yet implemented.
-    void splice(const_iterator, list<T, Alloc>&&);                                            // Not yet implemented.
-    void splice(const_iterator, list<T, Alloc>&, const_iterator);                             // Not yet implemented.
-    void splice(const_iterator, list<T, Alloc>&&, const_iterator);                            // Not yet implemented.
-    void splice(const_iterator, list<T, Alloc>&, const_iterator, const_iterator);             // Not yet implemented.
-    void splice(const_iterator, list<T, Alloc>&&, const_iterator, const_iterator);            // Not yet implemented.
+    void splice(const_iterator, list<T, Alloc>&);
+    void splice(const_iterator, list<T, Alloc>&&);
+    void splice(const_iterator, list<T, Alloc>&, const_iterator);
+    void splice(const_iterator, list<T, Alloc>&&, const_iterator);
+    void splice(const_iterator, list<T, Alloc>&, const_iterator, const_iterator);
+    void splice(const_iterator, list<T, Alloc>&&, const_iterator, const_iterator);
     void remove(const_ref);
     template <class Predicate>
         void remove_if(Predicate);
     void unique();
     template <class BinaryPredicate>
         void unique(BinaryPredicate);
-    void merge(list<T, Alloc>&);                                                              // Not yet implemented.
-    void merge(list<T, Alloc>&&);                                                             // Not yet implemented.
+    void merge(list<T, Alloc>&);
+    void merge(list<T, Alloc>&&);
     template <class Compare>
-        void merge(list<T, Alloc>&, Compare);                                                 // Not yet implemented.
+        void merge(list<T, Alloc>&, Compare);
     template <class Compare>
-        void merge(list<T, Alloc>&&, Compare);                                                // Not yet implemented.
+        void merge(list<T, Alloc>&&, Compare);
     void sort();
     template <class Compare>
         void sort(Compare);
@@ -449,9 +450,11 @@ list<T, Alloc>::list(size_type n, const_ref element)
  Function: range constructor.
  */
 template <class T, class Alloc>
-list<T, Alloc>::list(iterator, iterator)
+list<T, Alloc>::list(iterator first, iterator last)
     : _dummy(Node::create_dummy())
-{}
+{
+    insert(begin(), first, last);
+}
 
 
 /*
@@ -476,9 +479,11 @@ list<T, Alloc>::list(const list<T, Alloc>& rhs)
  Function: move constructor.
  */
 template <class T, class Alloc>
-list<T, Alloc>::list(list<T, Alloc>&&)
+list<T, Alloc>::list(list<T, Alloc>&& other_list)
     : _dummy(Node::create_dummy())
-{}
+{
+    splice(begin(), std::move(other_list));
+}
 
 
 /*
@@ -722,10 +727,32 @@ list<T, Alloc>::operator[](size_type index) const
 
 // Modifiers
 
+/*
+ 
+ */
+template <class T, class Alloc>
+void
+list<T, Alloc>::assign(iterator first, iterator last)
+{
+    clear();
+    insert(begin(), first, last);
+}
 
-//void assign(iterator, iterator);                                                   // Not yet implemented.
-//void assign(size_type, const_ref);                                                 // Not yet implemented.
-//void assign(std::initializer_list<T, Alloc>);                                             // Not yet implemented.
+template <class T, class Alloc>
+void
+list<T, Alloc>::assign(size_type n, const_ref element)
+{
+    clear();
+    insert(begin(), n, element);
+}
+
+template <class T, class Alloc>
+void
+list<T, Alloc>::assign(std::initializer_list<T> il)
+{
+    clear();
+    insert(begin(), il);
+}
 
 
 
@@ -1174,7 +1201,7 @@ list<T, Alloc>::splice(const_iterator pos, list&& x, const_iterator first, const
 {
     assert(first != last);
     
-    for (auto it = first; it != last; ++it, ++_size);
+    for (auto it = first; it != last; ++it, ++_size, --x._size);
     
     pos.itr->prev->next = first.itr;
     last.itr->prev->next = pos.itr;
