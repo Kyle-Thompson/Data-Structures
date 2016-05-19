@@ -1384,25 +1384,10 @@ list<T, Alloc>::sort(Compare compare)
             return;
         
         auto pivot = first--;
-
-        auto move_left_of_pivot = [&](iterator it){
-            auto& node = it.itr;
-            auto& piv_node = pivot.itr;
-            
-            node->next->prev = node->prev;
-            node->prev->next = node->next;
-            
-            node->prev = piv_node->prev;
-            node->next = piv_node;
-            
-            piv_node->prev->next = node;
-            piv_node->prev = node;
-        };
-        
         
         for (auto itr = pivot; itr != last;) {
             if (compare(itr, pivot))
-                move_left_of_pivot(itr++);
+                (itr++).itr->move_before(pivot.itr);
             else
                 ++itr;
         }
@@ -1412,7 +1397,6 @@ list<T, Alloc>::sort(Compare compare)
     };
     
     do_sort(begin(), end());
-    
 }
 
 
