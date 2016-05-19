@@ -527,7 +527,6 @@ template <class T, class Alloc>
 inline typename list<T, Alloc>::iterator
 list<T, Alloc>::begin() const
 {
-    assert(!empty());
     return _dummy->next;
 }
 
@@ -582,7 +581,6 @@ template <class T, class Alloc>
 inline typename list<T, Alloc>::reverse_iterator
 list<T, Alloc>::rbegin() const
 {
-    assert(!empty());
     return _dummy->prev;
 }
 
@@ -611,7 +609,6 @@ template <class T, class Alloc>
 inline typename list<T, Alloc>::const_reverse_iterator
 list<T, Alloc>::crbegin() const
 {
-    assert(!empty());
     return _dummy->prev;
 }
 
