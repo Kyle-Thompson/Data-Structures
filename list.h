@@ -20,19 +20,19 @@
   - Test with valgrind for memory leaks. Like for real. Who knows what's happened with these
     allocators now.
   - Find a good category for operator=.
-  - Removed templating from iterator.
-  - Find out how to properly do insert given an rvalue reference.
   - Find how to correctly implement const_iterator.
   - Update comments of similar functions (all different kinds of merge and such) to only be 
     one descriptor comment.
   - Find out what merge(&&, comp) needs different from merge(&, comp). (Also insert& and &&)
-  - Experiment with rvalue_ref node constructor.
   - Find out if iterator -> should return a pointer or reference.
-  - See if an iterator hierarchy can be made. (list_iterator as base class to iterator and
-    const_iterator for max code reuse.) (or maybe just have const_iterator inherit from
-    iterator and overwrite operators * and ->.
+  - See how much code can be moved from derived iterators to list_iterator.
+  - Make list_iterator abstract.
   - Find out why this works with clang but not g++.
   - Find out how the current use of allocators actually works.
+  - Consider node heirarchy with node inheriting from dummy node.
+  - Find a better way to do push_front than the horrible hacky way it is now.
+  - Make splice(pos, list) constant.
+  - See if it's possible to remove the need for the self check in move_before.
  */
 
 
@@ -69,26 +69,38 @@ private:
         Node* next;
         T data;
         
-        // Constructor for dummy node.
-        Node()
-            : prev(this)
-            , next(this)
-        {}
+        Node();                   // Dummy node constructor
+        Node(const_ref, Node*);   // Data node constructor
+        Node(rvalue_ref, Node*);  // Data node constructor
         
-        // Constructor for data node.
-        Node(const_ref element, Node* prevptr, Node* nextptr)
-            : prev(prevptr)
-            , next(nextptr)
-            , data(element)
-        {}
+        void detach();
+        void move_before(Node*);
+        void insert_before(Node*);
         
-        // Constructor for data node given an rvalue ref.
-        Node(rvalue_ref element, Node* prevptr, Node* nextptr)
-        : prev(prevptr)
-        , next(nextptr)
-        , data(std::move(element))
-        {}
+        static Node* create_dummy();
+        static Node* create_node(const_ref, Node*);
+        static Node* create_node(rvalue_ref, Node*);
+        static void  delete_node(Node*);
     };
+    
+//    class dummy_node : public Node {
+//    public:
+//        dummy_node();
+//    };
+//    
+//    class data_node : public Node {
+//    public:
+//        using Node::next;
+//        using Node::prev;
+//        T data;
+//        
+//        data_node(const_ref, Node*);
+//        data_node(rvalue_ref, Node*);
+//        
+//        void detach();
+//        void move_before(Node*);
+//        void insert_before(Node*);
+//    };
 
     
 /* Iterators */
@@ -122,6 +134,8 @@ public:
         iterator operator++(int) { iterator temp(*this); itr = itr->next; return temp; }
         iterator& operator--() { itr = itr->prev; return *this; }
         iterator operator--(int) { iterator temp(*this); itr = itr->prev; return temp; }
+        iterator next() { return iterator(itr->next); }
+        iterator prev() { return iterator(itr->prev); }
     };
     
     
@@ -141,6 +155,8 @@ public:
         const_iterator operator++(int) { const_iterator temp(*this); itr = itr->next; return temp; }
         const_iterator& operator--() { itr = itr->prev; return *this; }
         const_iterator operator--(int) { const_iterator temp(*this); itr = itr->prev; return temp; }
+        const_iterator next() { return const_iterator(itr->next); }
+        const_iterator prev() { return const_iterator(itr->prev); }
     };
     
     typedef std::reverse_iterator<iterator> reverse_iterator;
@@ -151,11 +167,6 @@ public:
 private:
     Node* _dummy;          // Dummy node between start and end of list.
     size_type _size = 0;   // Number of real elements in list.
-    
-
-/* Internal functions */
-private:
-    Node* _alloc_dummy();                                                     // Not yet implemented.
     
     
 /* Member functions */
@@ -247,16 +258,106 @@ public:
 
 
 
-// Internal functions
+// Node
 
 /*
- Function: allocate dummy
+ Function: Node Constructor
+ Parameters:
+  - element: The data that the node stores.
+  - next_node: The node which will be after this node.
+ */
+template <class T, class Alloc>
+list<T, Alloc>::Node::Node()
+    : next(this)
+    , prev(this)
+{}
+
+
+template <class T, class Alloc>
+list<T, Alloc>::Node::Node(const_ref element, Node* next_node)
+    : data(element)
+{
+    insert_before(next_node);
+}
+
+template <class T, class Alloc>
+list<T, Alloc>::Node::Node(rvalue_ref element, Node* next_node)
+    : data(std::move(element))
+{
+    insert_before(next_node);
+}
+
+
+/*
+ Function: unhook
+ */
+template <class T, class Alloc>
+void
+list<T, Alloc>::Node::detach()
+{
+    next->prev = this->prev;
+    prev->next = this->next;
+    
+    next = prev = nullptr;
+}
+
+
+/*
+ Function: insert_before
+ Parameters:
+ - other_node: The node which this node will be moved in
+               front of.
+ Return value: None
+ 
+ Description:
+    Takes a detached node and inserts it in front of another
+    node.
+ */
+template <class T, class Alloc>
+void
+list<T, Alloc>::Node::insert_before(Node* next_node)
+{
+    next = next_node;
+    prev = next_node->prev;
+    
+    next_node->prev->next = this;
+    next_node->prev = this;
+}
+
+
+/*
+ Function: move_before
+ Parameters:
+  - other_node: The node which this node will be moved in 
+                front of.
+ Return value: None
+ 
+ Description: 
+    Moves this node (which is currently in this list)
+    infront of another node in a potentially different list.
+ 
+ Complexity: Constant
+ */
+template <class T, class Alloc>
+void
+list<T, Alloc>::Node::move_before(Node* next_node)
+{
+    if (this == next_node)
+        return;
+    
+    detach();
+    insert_before(next_node);
+}
+
+
+/*
+ Function: create dummy
  Parameters: None
  Return value: Node*
  */
 template <class T, class Alloc>
 typename list<T, Alloc>::Node*
-list<T, Alloc>::_alloc_dummy()
+list<T, Alloc>::Node::create_dummy()
 {
     typename Alloc::template rebind<Node>::other alloc;
     auto node = alloc.allocate(1);
@@ -265,6 +366,48 @@ list<T, Alloc>::_alloc_dummy()
     return node;
 }
 
+
+/*
+ 
+ */
+template <class T, class Alloc>
+typename list<T, Alloc>::Node*
+list<T, Alloc>::Node::create_node(const_ref element, Node* next_node)
+{
+    typename Alloc::template rebind<Node>::other alloc;
+    auto node = alloc.allocate(1);
+    alloc.construct(node, element, next_node);
+    
+    return node;
+}
+
+
+/*
+ 
+ */
+template <class T, class Alloc>
+typename list<T, Alloc>::Node*
+list<T, Alloc>::Node::create_node(rvalue_ref element, Node* next_node)
+{
+    typename Alloc::template rebind<Node>::other alloc;
+    auto node = alloc.allocate(1);
+    alloc.construct(node, std::move(element), next_node);
+    
+    return node;
+}
+
+
+/*
+ 
+ */
+template <class T, class Alloc>
+void
+list<T, Alloc>::Node::delete_node(Node* node)
+{
+    typename Alloc::template rebind<Node>::other alloc;
+    alloc.destroy(node);
+    alloc.deallocate(node, 1);
+}
 
 
 // Constructors
@@ -279,7 +422,7 @@ list<T, Alloc>::_alloc_dummy()
  */
 template <class T, class Alloc>
 list<T, Alloc>::list()
-    : _dummy(_alloc_dummy())
+: _dummy(Node::create_dummy())
 {}
 
 
@@ -296,7 +439,7 @@ list<T, Alloc>::list()
  */
 template <class T, class Alloc>
 list<T, Alloc>::list(size_type n, const_ref element)
-    : _dummy(_alloc_dummy())
+    : _dummy(Node::create_dummy())
 {
     insert(end(), n, element);
 }
@@ -307,7 +450,7 @@ list<T, Alloc>::list(size_type n, const_ref element)
  */
 template <class T, class Alloc>
 list<T, Alloc>::list(iterator, iterator)
-    : _dummy(_alloc_dummy())
+    : _dummy(Node::create_dummy())
 {}
 
 
@@ -323,7 +466,7 @@ list<T, Alloc>::list(iterator, iterator)
  */
 template <class T, class Alloc>
 list<T, Alloc>::list(const list<T, Alloc>& rhs)
-    : _dummy(_alloc_dummy())
+    : _dummy(Node::create_dummy())
 {
     insert(end(), rhs.begin(), rhs.end());
 }
@@ -334,7 +477,7 @@ list<T, Alloc>::list(const list<T, Alloc>& rhs)
  */
 template <class T, class Alloc>
 list<T, Alloc>::list(list<T, Alloc>&&)
-    : _dummy(_alloc_dummy())
+    : _dummy(Node::create_dummy())
 {}
 
 
@@ -350,7 +493,7 @@ list<T, Alloc>::list(list<T, Alloc>&&)
  */
 template <class T, class Alloc>
 list<T, Alloc>::list(std::initializer_list<T> il)
-    : _dummy(_alloc_dummy())
+    : _dummy(Node::create_dummy())
 {
     insert(end(), il);
 }
@@ -368,10 +511,7 @@ template <class T, class Alloc>
 list<T, Alloc>::~list()
 {
     clear();
-    
-    typename Alloc::template rebind<Node>::other alloc;
-    alloc.destroy(_dummy);
-    alloc.deallocate(_dummy, 1);
+    Node::delete_node(_dummy);
 }
 
 
@@ -607,7 +747,10 @@ template <class T, class Alloc>
 void
 list<T, Alloc>::push_front(const T& element)
 {
-    insert(begin(), element);
+    if (!empty())
+        insert(begin(), element);
+    else
+        insert(begin(), element);
 }
 
 
@@ -627,7 +770,10 @@ template <class T, class Alloc>
 void
 list<T, Alloc>::push_front(T&& element)
 {
-    insert(begin(), std::move(element));
+    if (!empty())
+        insert(begin(), std::move(element));
+    else
+        insert(end(), std::move(element));
 }
 
 
@@ -764,11 +910,9 @@ list<T, Alloc>::pop_back()
  */
 template <class T, class Alloc>
 typename list<T, Alloc>::iterator
-list<T, Alloc>::insert(iterator pos, const T& element)
+list<T, Alloc>::insert(iterator pos, const_ref element)
 {
-    typename Alloc::template rebind<Node>::other alloc;
-    auto node = alloc.allocate(1);
-    alloc.construct(node, element, pos.itr->prev, pos.itr);
+    auto node = Node::create_node(element, pos.itr);
     
     node->prev->next = node;
     node->next->prev = node;
@@ -898,9 +1042,7 @@ list<T, Alloc>::erase(iterator pos)
     node->prev->next = node->next;
     node->next->prev = node->prev;
     
-    typename Alloc::template rebind<Node>::other alloc;
-    alloc.destroy(node);
-    alloc.deallocate(node, 1);
+    Node::delete_node(node);
     
     --_size;
     
@@ -972,12 +1114,78 @@ list<T, Alloc>::clear() noexcept
 }
 
 
-//void splice(const_iterator, list<T, Alloc>&);                                       // Not yet implemented.
-//void splice(const_iterator, list<T, Alloc>&&);                                      // Not yet implemented.
-//void splice(const_iterator, list<T, Alloc>&, const_iterator);                       // Not yet implemented.
-//void splice(const_iterator, list<T, Alloc>&&, const_iterator);                      // Not yet implemented.
-//void splice(const_iterator, list<T, Alloc>&, const_iterator, const_iterator);       // Not yet implemented.
-//void splice(const_iterator, list<T, Alloc>&&, const_iterator, const_iterator);      // Not yet implemented.
+/*
+ Function: splice
+ Parameters:
+  - 
+ Return value: None
+ 
+ Description:
+    
+ 
+ Complexity: Linear in the number of elements being spliced in.
+ */
+template <class T, class Alloc>
+void
+list<T, Alloc>::splice(const_iterator pos, list& x)
+{
+    assert(!x.empty());
+    splice(pos, x, x.cbegin(), x.cend());
+}
+
+template <class T, class Alloc>
+void
+list<T, Alloc>::splice(const_iterator pos, list&& x)
+{
+    assert(!x.empty());
+    splice(pos, std::move(x), x.cbegin(), x.cend());
+}
+
+template <class T, class Alloc>
+void
+list<T, Alloc>::splice(const_iterator pos, list& x, const_iterator i)
+{
+    splice(pos, x, i, i.next());
+}
+
+template <class T, class Alloc>
+void
+list<T, Alloc>::splice(const_iterator pos, list&& x, const_iterator i)
+{
+    splice(pos, std::move(x), i, i.next());
+}
+
+template <class T, class Alloc>
+void
+list<T, Alloc>::splice(const_iterator pos, list& x, const_iterator first, const_iterator last)
+{
+    assert(first != last);
+    
+    for (auto it = first; it != last; ++it, ++_size, --x._size);
+    
+    pos.itr->prev->next = first.itr;
+    last.itr->prev->next = pos.itr;
+    first.itr->prev->next = last.itr;
+    (last--).itr->prev = first.itr->prev;
+    first.itr->prev = pos.itr->prev;
+    pos.itr->prev = last.itr;
+}
+
+template <class T, class Alloc>
+void
+list<T, Alloc>::splice(const_iterator pos, list&& x, const_iterator first, const_iterator last)
+{
+    assert(first != last);
+    
+    for (auto it = first; it != last; ++it, ++_size);
+    
+    pos.itr->prev->next = first.itr;
+    last.itr->prev->next = pos.itr;
+    first.itr->prev->next = last.itr;
+    (last--).itr->prev = first.itr->prev;
+    first.itr->prev = pos.itr->prev;
+    pos.itr->prev = last.itr;
+}
 
 
 /*
@@ -1080,15 +1288,14 @@ list<T, Alloc>::unique(BinaryPredicate predicate)
  Function: merge
  Parameters:
   - other: The other list being merged in.
-  - compare: Compares elements from the other list with 
-             this list.
+  - compare: Compares elements from the other list with this list.
  Return value: None
  
  Description:
-    
+    Combines this sorted list with another sorted list leaving the 
+    other list empty after moving all its elements into this list.
  
- Complexity: O(_size + other._size) -> Linear in the combined 
-                                       size of both lists.
+ Complexity: Linear in the combined size of both lists.
  
  Notes:
   - Functions like insert are not used here since it would
@@ -1099,38 +1306,25 @@ template <class T, class Alloc>
 void
 list<T, Alloc>::merge(list<T, Alloc>& other)
 {
-    merge(other, [](iterator other_el, iterator this_el){ return *other_el < *this_el; }); // TODO: rename these variables
+    merge(other, [](iterator other_el, iterator this_el) { // TODO: rename these variables
+        return *other_el < *this_el;
+    });
 }
-
 
 template <class T, class Alloc>
 void
 list<T, Alloc>::merge(list<T, Alloc>&& other)
 {
-    merge(std::move(other), [](iterator other_el, iterator this_el){ return *other_el < *this_el; }); // TODO: rename these variables
+    merge(std::move(other), [](iterator other_el, iterator this_el) { // TODO: rename these variables
+        return *other_el < *this_el;
+    });
 }
-
 
 template <class T, class Alloc>
 template <class Compare>
 void
 list<T, Alloc>::merge(list<T, Alloc>& other, Compare compare)
 {
-    // Helper function to insert other_el infront of this_el.
-    auto insert_before = [](iterator other_el, iterator this_el){
-        auto other_node = other_el.itr;
-        auto this_node = this_el.itr;
-        
-        other_node->prev->next = other_node->next;
-        other_node->next->prev = other_node->prev;
-        
-        other_node->next = this_node;
-        other_node->prev = this_node->prev;
-        
-        this_node->prev->next = other_node;
-        this_node->prev = other_node;
-    };
-    
     auto itr = begin();
     auto o_itr = other.begin();
     
@@ -1139,7 +1333,7 @@ list<T, Alloc>::merge(list<T, Alloc>& other, Compare compare)
         for (; !compare(o_itr, itr) && itr != end(); ++itr);
         
         if (itr != end()) {
-            insert_before(o_itr++, itr);
+            (o_itr++).itr->move_before(itr.itr);
             ++_size;
             ++other._size;
         }
@@ -1147,7 +1341,7 @@ list<T, Alloc>::merge(list<T, Alloc>& other, Compare compare)
     
     // If any elements remain in the other list, splice them into the end of this one.
     if (o_itr != other.end())
-        splice(end(), other);
+        splice(cend(), other);
 }
 
 
@@ -1167,10 +1361,10 @@ list<T, Alloc>::merge(list<T, Alloc>&& other, Compare compare)
  Return value: None
  
  Description:
- Sorts the elements in the list based on some comparator
- using quicksort.
+    Sorts the elements in the list based on some comparator
+    using quicksort.
  
- Complexity: E(nlogn), O(n^2) -> Where n is _size.
+ Complexity: Expected: nlogn, worst case: n^2.
  */
 template <class T, class Alloc>
 void
@@ -1230,27 +1424,14 @@ list<T, Alloc>::sort(Compare compare)
  Description:
     Reverses the list.
  
- Complexity: O(_size) -> Linear in the size of the list.
+ Complexity: Linear in the size of the list.
  */
 template <class T, class Alloc>
 void
 list<T, Alloc>::reverse() noexcept
 {
-    auto move_front = [&](iterator it){
-        auto& node = it.itr;
-        
-        node->next->prev = node->prev;
-        node->prev->next = node->next;
-        
-        node->next = _dummy->next;
-        node->prev = _dummy;
-        
-        _dummy->next = node;
-        node->next->prev = node;
-    };
-    
     for (auto it = begin(); it != end();)
-        move_front(it++);
+        (it++).itr->move_before(begin().itr);
 }
 
 
