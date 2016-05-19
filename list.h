@@ -1335,7 +1335,7 @@ list<T, Alloc>::merge(list<T, Alloc>& other, Compare compare)
         if (itr != end()) {
             (o_itr++).node->move_before(itr.node);
             ++_size;
-            ++other._size;
+            --other._size;
         }
     }
     
