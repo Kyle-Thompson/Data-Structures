@@ -109,11 +109,11 @@ public:
         
     /* Iterator data members */
     protected:
-        Node* itr;
+        Node* node;
         
     public:
-        list_iterator(Node* n) : itr(n) {}
-        bool operator==(const list_iterator& rhs) { return itr->data == rhs.itr->data; }
+        list_iterator(Node* n) : node(n) {}
+        bool operator==(const list_iterator& rhs) { return node->data == rhs.node->data; }
         bool operator!=(const list_iterator& rhs) { return !(*this == rhs); }
     };
     
@@ -123,19 +123,19 @@ public:
         friend class list<T, Alloc>;
         
     private:
-        using list_iterator::itr;
+        using list_iterator::node;
         
     /* Iterator member functions */
     public:
         iterator(Node* n) : list_iterator(n) {}
-        reference operator*()  { return itr->data; }
-        reference operator->() { return itr->data; }
-        iterator& operator++() { itr = itr->next; return *this; }
-        iterator operator++(int) { iterator temp(*this); itr = itr->next; return temp; }
-        iterator& operator--() { itr = itr->prev; return *this; }
-        iterator operator--(int) { iterator temp(*this); itr = itr->prev; return temp; }
-        iterator next() { return iterator(itr->next); }
-        iterator prev() { return iterator(itr->prev); }
+        reference operator*()  { return node->data; }
+        reference operator->() { return node->data; }
+        iterator& operator++() { node = node->next; return *this; }
+        iterator operator++(int) { iterator temp(*this); node = node->next; return temp; }
+        iterator& operator--() { node = node->prev; return *this; }
+        iterator operator--(int) { iterator temp(*this); node = node->prev; return temp; }
+        iterator next() { return iterator(node->next); }
+        iterator prev() { return iterator(node->prev); }
     };
     
     
@@ -144,19 +144,19 @@ public:
         friend class list<T, Alloc>;
         
     private:
-        using list_iterator::itr;
+        using list_iterator::node;
         
     /* Iterator member functions */
     public:
         const_iterator(Node* n) : list_iterator(n) {}
-        const_ref operator*()  { return itr->data; }
-        const_ref operator->() { return itr->data; }
-        const_iterator& operator++() { itr = itr->next; return *this; }
-        const_iterator operator++(int) { const_iterator temp(*this); itr = itr->next; return temp; }
-        const_iterator& operator--() { itr = itr->prev; return *this; }
-        const_iterator operator--(int) { const_iterator temp(*this); itr = itr->prev; return temp; }
-        const_iterator next() { return const_iterator(itr->next); }
-        const_iterator prev() { return const_iterator(itr->prev); }
+        const_ref operator*()  { return node->data; }
+        const_ref operator->() { return node->data; }
+        const_iterator& operator++() { node = node->next; return *this; }
+        const_iterator operator++(int) { const_iterator temp(*this); node = node->next; return temp; }
+        const_iterator& operator--() { node = node->prev; return *this; }
+        const_iterator operator--(int) { const_iterator temp(*this); node = node->prev; return temp; }
+        const_iterator next() { return const_iterator(node->next); }
+        const_iterator prev() { return const_iterator(node->prev); }
     };
     
     typedef std::reverse_iterator<iterator> reverse_iterator;
@@ -912,7 +912,7 @@ template <class T, class Alloc>
 typename list<T, Alloc>::iterator
 list<T, Alloc>::insert(iterator pos, const_ref element)
 {
-    auto node = Node::create_node(element, pos.itr);
+    auto node = Node::create_node(element, pos.node);
     
     node->prev->next = node;
     node->next->prev = node;
@@ -1037,7 +1037,7 @@ template <class T, class Alloc>
 typename list<T, Alloc>::iterator
 list<T, Alloc>::erase(iterator pos)
 {
-    auto node = pos.itr;
+    auto node = pos.node;
     
     node->prev->next = node->next;
     node->next->prev = node->prev;
@@ -1163,12 +1163,12 @@ list<T, Alloc>::splice(const_iterator pos, list& x, const_iterator first, const_
     
     for (auto it = first; it != last; ++it, ++_size, --x._size);
     
-    pos.itr->prev->next = first.itr;
-    last.itr->prev->next = pos.itr;
-    first.itr->prev->next = last.itr;
-    (last--).itr->prev = first.itr->prev;
-    first.itr->prev = pos.itr->prev;
-    pos.itr->prev = last.itr;
+    pos.node->prev->next = first.node;
+    last.node->prev->next = pos.node;
+    first.node->prev->next = last.node;
+    (last--).node->prev = first.node->prev;
+    first.node->prev = pos.node->prev;
+    pos.node->prev = last.node;
 }
 
 template <class T, class Alloc>
@@ -1333,7 +1333,7 @@ list<T, Alloc>::merge(list<T, Alloc>& other, Compare compare)
         for (; !compare(o_itr, itr) && itr != end(); ++itr);
         
         if (itr != end()) {
-            (o_itr++).itr->move_before(itr.itr);
+            (o_itr++).node->move_before(itr.node);
             ++_size;
             ++other._size;
         }
@@ -1387,7 +1387,7 @@ list<T, Alloc>::sort(Compare compare)
         
         for (auto itr = pivot; itr != last;) {
             if (compare(itr, pivot))
-                (itr++).itr->move_before(pivot.itr);
+                (itr++).node->move_before(pivot.node);
             else
                 ++itr;
         }
@@ -1415,7 +1415,7 @@ void
 list<T, Alloc>::reverse() noexcept
 {
     for (auto it = begin(); it != end();)
-        (it++).itr->move_before(begin().itr);
+        (it++).node->move_before(begin().node);
 }
 
 
