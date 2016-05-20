@@ -33,6 +33,8 @@
   - Find a better way to do push_front than the horrible hacky way it is now.
   - Make splice(pos, list) constant.
   - See if it's possible to remove the need for the self check in move_before.
+  - Find out what emplace constructed means and how it applies to range constructor.
+  - See what iterators can be made into const iterators.
  */
 
 
@@ -174,9 +176,9 @@ public:
     /* Constructors */
     list();
     list(size_type, const_ref);
-    list(iterator, iterator);                                                    // Not yet implemented.
+    list(iterator, iterator);
     list(const list<T, Alloc>&);
-    list(list<T, Alloc>&&);                                                       // Not yet implemented.
+    list(list<T, Alloc>&&);
     list(std::initializer_list<T>);
     ~list();
     
@@ -205,9 +207,9 @@ public:
     reference operator[](size_type) const;
     
     /* Modifiers */
-    void assign(iterator, iterator);                                                   // Not yet implemented.
-    void assign(size_type, const_ref);                                                 // Not yet implemented.
-    void assign(std::initializer_list<value_type>);                                    // Not yet implemented.
+    void assign(iterator, iterator);
+    void assign(size_type, const_ref);
+    void assign(std::initializer_list<value_type>);
     void push_front(const_ref);
     void push_front(rvalue_ref);
     void push_back(const_ref);
@@ -231,24 +233,24 @@ public:
     void clear() noexcept;
     
     /* Operations */
-    void splice(const_iterator, list<T, Alloc>&);                                             // Not yet implemented.
-    void splice(const_iterator, list<T, Alloc>&&);                                            // Not yet implemented.
-    void splice(const_iterator, list<T, Alloc>&, const_iterator);                             // Not yet implemented.
-    void splice(const_iterator, list<T, Alloc>&&, const_iterator);                            // Not yet implemented.
-    void splice(const_iterator, list<T, Alloc>&, const_iterator, const_iterator);             // Not yet implemented.
-    void splice(const_iterator, list<T, Alloc>&&, const_iterator, const_iterator);            // Not yet implemented.
+    void splice(const_iterator, list<T, Alloc>&);
+    void splice(const_iterator, list<T, Alloc>&&);
+    void splice(const_iterator, list<T, Alloc>&, const_iterator);
+    void splice(const_iterator, list<T, Alloc>&&, const_iterator);
+    void splice(const_iterator, list<T, Alloc>&, const_iterator, const_iterator);
+    void splice(const_iterator, list<T, Alloc>&&, const_iterator, const_iterator);
     void remove(const_ref);
     template <class Predicate>
         void remove_if(Predicate);
     void unique();
     template <class BinaryPredicate>
         void unique(BinaryPredicate);
-    void merge(list<T, Alloc>&);                                                              // Not yet implemented.
-    void merge(list<T, Alloc>&&);                                                             // Not yet implemented.
+    void merge(list<T, Alloc>&);
+    void merge(list<T, Alloc>&&);
     template <class Compare>
-        void merge(list<T, Alloc>&, Compare);                                                 // Not yet implemented.
+        void merge(list<T, Alloc>&, Compare);
     template <class Compare>
-        void merge(list<T, Alloc>&&, Compare);                                                // Not yet implemented.
+        void merge(list<T, Alloc>&&, Compare);
     void sort();
     template <class Compare>
         void sort(Compare);
@@ -449,9 +451,11 @@ list<T, Alloc>::list(size_type n, const_ref element)
  Function: range constructor.
  */
 template <class T, class Alloc>
-list<T, Alloc>::list(iterator, iterator)
+list<T, Alloc>::list(iterator first, iterator last)
     : _dummy(Node::create_dummy())
-{}
+{
+    insert(begin(), first, last);
+}
 
 
 /*
@@ -476,9 +480,11 @@ list<T, Alloc>::list(const list<T, Alloc>& rhs)
  Function: move constructor.
  */
 template <class T, class Alloc>
-list<T, Alloc>::list(list<T, Alloc>&&)
+list<T, Alloc>::list(list<T, Alloc>&& other_list)
     : _dummy(Node::create_dummy())
-{}
+{
+    splice(begin(), std::move(other_list));
+}
 
 
 /*
@@ -722,68 +728,86 @@ list<T, Alloc>::operator[](size_type index) const
 
 // Modifiers
 
-
-//void assign(iterator, iterator);                                                   // Not yet implemented.
-//void assign(size_type, const_ref);                                                 // Not yet implemented.
-//void assign(std::initializer_list<T, Alloc>);                                             // Not yet implemented.
-
-
-
 /*
- Function: push_front
+ Function: assign
  Parameters:
-  - element: A const reference to the element being added to the list.
+  - first: The first element in a range.
+  - last: One past the last element in a range.
+  - n: The number of times to add 'element'.
+  - element: The element to be repeatedly added.
+  - il: An initializer list of new elements.
  Return value: None
  
  Description:
-    Adds a given element into the front of the list.
+    Replaces the contents of the current list with...
+    1. a range of elements in a collection.
+    2. one element repeated n times.
+    3. an initializer list of new elements.
  
- Complexity: O(1) -> Constant.
+ Complexity: Linear in the current size of the list
+             and the number of elements replacing them.
  */
 template <class T, class Alloc>
 void
-list<T, Alloc>::push_front(const T& element)
+list<T, Alloc>::assign(iterator first, iterator last)
 {
-    if (!empty())
-        insert(begin(), element);
-    else
-        insert(begin(), element);
+    clear();
+    insert(begin(), first, last);
+}
+
+template <class T, class Alloc>
+void
+list<T, Alloc>::assign(size_type n, const_ref element)
+{
+    clear();
+    insert(begin(), n, element);
+}
+
+template <class T, class Alloc>
+void
+list<T, Alloc>::assign(std::initializer_list<T> il)
+{
+    clear();
+    insert(begin(), il);
 }
 
 
 /*
  Function: push_front
  Parameters:
-  - element: An r-value reference to the element being added to the
-             list.
+  - element: The element being added to the front of the list.
  Return value: None
  
  Description:
     Adds a given element into the front of the list.
  
- Complexity: O(1) -> Constant.
+ Complexity: Constant
  */
+template <class T, class Alloc>
+void
+list<T, Alloc>::push_front(const T& element)
+{
+    insert(begin(), element);
+}
+
 template <class T, class Alloc>
 void
 list<T, Alloc>::push_front(T&& element)
 {
-    if (!empty())
-        insert(begin(), std::move(element));
-    else
-        insert(end(), std::move(element));
+    insert(begin(), std::move(element));
 }
 
 
 /*
  Function: push_back
  Parameters:
-  - element: A const reference to the element being added to the list.
+  - element: The element being added to the list.
  Return value: None
  
  Description:
     Adds a given element into the back of the list.
  
- Complexity: O(1) -> Constant.
+ Complexity: Constant
  */
 template <class T, class Alloc>
 void
@@ -792,19 +816,6 @@ list<T, Alloc>::push_back(const T& element)
     insert(end(), element);
 }
 
-
-/*
- Function: push_back
- Parameters:
-  - element: An r-value reference to the element being added to the
-             list.
- Return value: None
- 
- Description:
-    Adds a given element into the back of the list.
- 
- Complexity: O(1) -> Constant.
- */
 template <class T, class Alloc>
 void
 list<T, Alloc>::push_back(T&& element)
@@ -1021,14 +1032,18 @@ list<T, Alloc>::insert(iterator pos, std::initializer_list<T> il)
 /*
  Function: erase
  Parameters:
-  - pos: An iterator pointing to the element to be removed.
- Return value: An iterator pointing to the element that followed the one 
-               just removed.
+  - pos: An iterator to the element to be removed.
+  - first: An iterator to the first element to be removed.
+  - last: An iterator to one past the last element to be removed.
+ Return value: An iterator to the element that replaces the first
+               element which was removed.
  
  Description:
-    Removes the element at position pos from the list.
+    Removes...
+    1. an element from the list.
+    2. a range of elements from the list. [first, last)
  
- Complexity: O(1) -> Constant.
+ Complexity: Linear in the number of elements being removed.
  */
 template <class T, class Alloc>
 typename list<T, Alloc>::iterator
@@ -1046,22 +1061,6 @@ list<T, Alloc>::erase(iterator pos)
     return ++pos;
 }
 
-
-/*
- Function: erase range
- Parameters:
-  - first: An iterator pointing to the first element to be removed.
-  - last: An iterator pointing to the element after the last element
-          to be removed.
- Return value: An iterator to the element that replaced first after
-               all erases. (Always last)
- 
- Description:
-    Removes a range of elements [first, last) from the list.
- 
- Complexity: O(dist(first, last)) -> Linear in the number of elements
-                                     between first and last.
- */
 template <class T, class Alloc>
 typename list<T, Alloc>::iterator
 list<T, Alloc>::erase(iterator first, iterator last)
@@ -1174,7 +1173,7 @@ list<T, Alloc>::splice(const_iterator pos, list&& x, const_iterator first, const
 {
     assert(first != last);
     
-    for (auto it = first; it != last; ++it, ++_size);
+    for (auto it = first; it != last; ++it, ++_size, --x._size);
     
     pos.itr->prev->next = first.itr;
     last.itr->prev->next = pos.itr;
