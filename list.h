@@ -268,8 +268,8 @@ public:
  */
 template <class T, class Alloc>
 list<T, Alloc>::Node::Node()
-    : next(this)
-    , prev(this)
+    : prev(this)
+    , next(this)
 {}
 
 
