@@ -182,9 +182,10 @@ public:
     list(std::initializer_list<T>);
     ~list();
     
-    // where to even put this assignment operator?
-    //list<T, Alloc>& operator=(list<T, Alloc>&);                                           // Not yet implemented.
-    //list<T, Alloc>& operator=(list<T, Alloc>&&);                                           // Not yet implemented.
+    /* Assignmnent */
+    list<T, Alloc>& operator=(const list<T, Alloc>&);
+    list<T, Alloc>& operator=(list<T, Alloc>&&);
+    list<T, Alloc>& operator=(std::initializer_list<T>);
     
     /* Iterators */
     iterator begin() const;
@@ -415,30 +416,40 @@ list<T, Alloc>::Node::delete_node(Node* node)
 // Constructors
 
 /*
- Function: default constructor
- Parameters: None
+ Function: constructor
+ Parameters:
+  - n: The number of times to insert 'element'.
+  - element: The element to be inserted.
+  - first: Iterator to the first element to be inserted.
+  - last: Iterator to one past the last element to be inserted.
+  - rhs: The list which is being either copied or moved from.
+  - il: Initializer list of elements.
  Return value: None
  
  Description:
-    Initializes a default, empty linked list.
+  1.
+  2.
+  3.
+  4. 
+  5.
+  6.
+ 
+ Complexity:
+  1. Constant.
+  2. Linear in n.
+  3. Linear in distance between first and last.
+  4. Linear in size of rhs.
+  5. Constant.
+  6. Linear in the size of il.
  */
+
+// 1. default constructor
 template <class T, class Alloc>
 list<T, Alloc>::list()
-: _dummy(Node::create_dummy())
+    : _dummy(Node::create_dummy())
 {}
 
-
-/*
- Function: fill constructor
- Parameters:
-  - n: The number of times the element will be copied
-       into the list.
-  - element: The element used to fill the list.
- Return value: None
- 
- Description:
-    Initializes a list with n copies of element.
- */
+// 2. fill constructor
 template <class T, class Alloc>
 list<T, Alloc>::list(size_type n, const_ref element)
     : _dummy(Node::create_dummy())
@@ -446,28 +457,15 @@ list<T, Alloc>::list(size_type n, const_ref element)
     insert(end(), n, element);
 }
 
-
-/*
- Function: range constructor.
- */
+// 3. range constructor
 template <class T, class Alloc>
 list<T, Alloc>::list(iterator first, iterator last)
     : _dummy(Node::create_dummy())
 {
-    insert(begin(), first, last);
+    insert(end(), first, last);
 }
 
-
-/*
- Function: copy constructor
- Parameters: 
-  - rhs: Reference to other list being copied from.
- Return value: None
- 
- Description:
-    Initializes a linked list as a deep copy of another
-    linked list.
- */
+// 4. copy constructor
 template <class T, class Alloc>
 list<T, Alloc>::list(const list<T, Alloc>& rhs)
     : _dummy(Node::create_dummy())
@@ -475,28 +473,15 @@ list<T, Alloc>::list(const list<T, Alloc>& rhs)
     insert(end(), rhs.begin(), rhs.end());
 }
 
-
-/*
- Function: move constructor.
- */
+// 5. move constructor
 template <class T, class Alloc>
-list<T, Alloc>::list(list<T, Alloc>&& other_list)
+list<T, Alloc>::list(list<T, Alloc>&& rhs)
     : _dummy(Node::create_dummy())
 {
-    splice(begin(), std::move(other_list));
+    splice(end(), std::move(rhs));
 }
 
-
-/*
- Function: initializer list constructor
- Parameters:
-  - il: An initializer list of elements to construct the
-        list with.
- Return value: None
- 
- Description:
-    Initializes a list based on an initializer list.
- */
+// 6. initializer list constructor
 template <class T, class Alloc>
 list<T, Alloc>::list(std::initializer_list<T> il)
     : _dummy(Node::create_dummy())
@@ -506,7 +491,7 @@ list<T, Alloc>::list(std::initializer_list<T> il)
 
 
 /*
- Function: Destructor
+ Function: destructor
  Parameters: None
  Return value: None
  
@@ -518,6 +503,60 @@ list<T, Alloc>::~list()
 {
     clear();
     Node::delete_node(_dummy);
+}
+
+
+
+// Assignment
+
+/*
+ Function: operator=
+ Parameters:
+  - rhs: The other list which is being assigned from.
+  - il: An initializer list of new elements for the list.
+ Return value: A reference to this list.
+ 
+ Description:
+    Replaces contents of this list with...
+    1. elements from rhs without affecting rhs.
+    2.
+    3. initializer list assignment:
+ 
+ Complexity: Linear in the size of this list and (for 1 and
+             3) the size of rhs or il.
+ 
+ */
+
+// 1. copy assignment
+template <class T, class Alloc>
+list<T, Alloc>&
+list<T, Alloc>::operator=(const list<T, Alloc>& rhs)
+{
+    clear();
+    insert(begin(), rhs.begin(), rhs.end());
+    
+    return *this;
+}
+
+// 2. move assignment
+template <class T, class Alloc>
+list<T, Alloc>&
+list<T, Alloc>::operator=(list<T, Alloc>&& rhs)
+{
+    clear();
+    splice(begin(), rhs);
+    
+    return *this;
+}
+
+// 3. initializer list assignment
+template <class T, class Alloc>
+list<T, Alloc>&
+list<T, Alloc>::operator=(std::initializer_list<T> il)
+{
+    assign(il);
+    
+    return *this;
 }
 
 
