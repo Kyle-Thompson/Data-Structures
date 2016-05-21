@@ -220,7 +220,7 @@ public:
     template <class... Args>
         void emplace_back(Args&&...);                                                  // Not yet implemented.
     template <class... Args>
-        iterator emplace(const_iterator position, Args&&...);                          // Not yet implemented.
+        iterator emplace(const_iterator, Args&&...);                          // Not yet implemented.
     void pop_front();
     void pop_back();
     iterator insert(iterator, const_ref);
@@ -879,8 +879,7 @@ template <class... Args>
 void
 list<T, Alloc>::emplace_front(Args&&... args)
 {
-    // TODO: Fill in function definition.
-    // Likely needs an allocator to work.
+    emplace(begin().node, std::forward<Args>(args)...);
 }
 
 
@@ -900,7 +899,17 @@ template <class... Args>
 void
 list<T, Alloc>::emplace_back(Args&&... args)
 {
-    // TODO: Fill in function definition.
+    emplace(end().node, std::forward<Args>(args)...);
+}
+
+template <class T, class Alloc>
+template <class... Args>
+typename list<T, Alloc>::iterator
+list<T, Alloc>::emplace(const_iterator pos, Args&&... args)
+{
+    Node* n = Node::create_node(T(std::forward<Args>(args)...), pos().node);
+    
+    return iterator(n);
 }
 
 
