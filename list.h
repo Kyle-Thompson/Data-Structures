@@ -973,7 +973,6 @@ template <class T, class Alloc>
 void
 list<T, Alloc>::pop_back()
 {
-    //erase(iterator(_dummy->prev));
     erase(--end());
 }
 
