@@ -1403,17 +1403,17 @@ list<T, Alloc>::merge(list<T, Alloc>&& other, Compare compare)
  
  Description:
     Sorts the elements in the list based on some comparator
-    using quicksort.
+    using quicksort. (TODO: find out if stable)
  
  Complexity: Expected: nlogn, worst case: n^2.
  */
+
 template <class T, class Alloc>
 void
 list<T, Alloc>::sort()
 {
     sort([](iterator it1, iterator it2){ return *it1 < *it2; });
 }
-
 
 template <class T, class Alloc>
 template <class Compare>
@@ -1426,12 +1426,9 @@ list<T, Alloc>::sort(Compare compare)
         
         auto pivot = first--;
         
-        for (auto itr = pivot; itr != last;) {
-            if (compare(itr, pivot))
-                (itr++).node->move_before(pivot.node);
-            else
-                ++itr;
-        }
+        for (auto itr = pivot; itr != last;)
+            if (compare(itr++, pivot))
+                itr.node->prev->move_before(pivot.node);
         
         do_sort(++first, pivot);
         do_sort(++pivot, last);
