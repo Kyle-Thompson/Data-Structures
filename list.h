@@ -16,13 +16,10 @@
   - Get const_reverse_iterator functions working.
   - Test with valgrind for memory leaks. Like for real. Who knows what's happened with these
     allocators now.
-  - Update comments of similar functions (all different kinds of merge and such) to only be
-    one descriptor comment.
   - Find out what merge(&&, comp) needs different from merge(&, comp). (Also insert& and &&)
   - See how much code can be moved from derived iterators to list_iterator.
   - Find out how the current use of allocators actually works.
   - Find out what emplace constructed means and how it applies to range constructor.
-  - See what iterators can be made into const iterators.
   - Look into perfect forwarding to reduce code duplication for list& and list&&.
  */
 
@@ -547,7 +544,7 @@ list<T, Alloc>::~list()
  Description:
     Replaces contents of this list with...
     1. elements from rhs without affecting rhs.
-    2.
+    2. elements from rhs by taking its elements.
     3. initializer list assignment:
  
  Complexity: Linear in the size of this list and (for 1 and
@@ -726,6 +723,7 @@ list<T, Alloc>::size() const
 {
     return _size;
 }
+
 
 
 // Element access
