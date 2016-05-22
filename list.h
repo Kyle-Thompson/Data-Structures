@@ -1366,11 +1366,10 @@ template <class Compare>
 void
 list<T, Alloc>::merge(list<T, Alloc>& other, Compare compare)
 {
-    auto itr = begin();
     auto o_itr = other.begin();
     
     // Iterate over this list inserting other elements on successful compare.
-    for (; o_itr != other.end() && itr != end();) {
+    for (auto itr = begin(); itr != end() && o_itr != other.end();) {
         for (; !compare(o_itr, itr) && itr != end(); ++itr);
         
         if (itr != end()) {
@@ -1384,7 +1383,6 @@ list<T, Alloc>::merge(list<T, Alloc>& other, Compare compare)
     if (o_itr != other.end())
         splice(cend(), other);
 }
-
 
 template <class T, class Alloc>
 template <class Compare>
