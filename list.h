@@ -87,10 +87,7 @@ private:
     
 /* Iterators */
 private:
-    class list_iterator : public std::iterator < std::bidirectional_iterator_tag,
-                                                 value_type >
-
-    {
+    class list_iterator : public std::iterator < std::bidirectional_iterator_tag, value_type > {
         
     /* Iterator data members */
     protected:
