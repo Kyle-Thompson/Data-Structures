@@ -14,7 +14,6 @@
  
  TODO:
   - Get const_reverse_iterator functions working.
-  - Test all functions.
   - Test with valgrind for memory leaks. Like for real. Who knows what's happened with these
     allocators now.
   - Update comments of similar functions (all different kinds of merge and such) to only be
@@ -22,7 +21,6 @@
   - Find out what merge(&&, comp) needs different from merge(&, comp). (Also insert& and &&)
   - See how much code can be moved from derived iterators to list_iterator.
   - Find out how the current use of allocators actually works.
-  - Make splice(pos, list) constant.
   - Find out what emplace constructed means and how it applies to range constructor.
   - See what iterators can be made into const iterators.
   - Look into perfect forwarding to reduce code duplication for list& and list&&.
@@ -1164,7 +1162,19 @@ void
 list<T, Alloc>::splice(const_iterator pos, list<T, Alloc>& x)
 {
     assert(!x.empty());
-    splice(pos, x, x.cbegin(), x.cend());
+    
+    _size += x._size;
+    x._size = 0;
+    
+    auto first = x.begin();
+    auto last = x.end();
+    
+    pos.node->prev->next = first.node;
+    last.node->prev->next = pos.node;
+    first.node->prev->next = last.node;
+    (last--).node->prev = first.node->prev;
+    first.node->prev = pos.node->prev;
+    pos.node->prev = last.node;
 }
 
 // 1. entire list
@@ -1173,7 +1183,19 @@ void
 list<T, Alloc>::splice(const_iterator pos, list<T, Alloc>&& x)
 {
     assert(!x.empty());
-    splice(pos, std::move(x), x.cbegin(), x.cend());
+    
+    _size += x._size;
+    x._size = 0;
+    
+    auto first = x.begin();
+    auto last = x.end();
+    
+    pos.node->prev->next = first.node;
+    last.node->prev->next = pos.node;
+    first.node->prev->next = last.node;
+    (last--).node->prev = first.node->prev;
+    first.node->prev = pos.node->prev;
+    pos.node->prev = last.node;
 }
 
 // 2. single element
@@ -1265,12 +1287,9 @@ template <class Predicate>
 void
 list<T, Alloc>::remove_if(Predicate pred)
 {
-    for (auto it = begin(); it != end();) {
-        if (pred(*it))
-            erase(it++);
-        else
-            ++it;
-    }
+    for (auto it = begin(); it != end();)
+        if (pred(*it++))
+            erase(it.prev());
 }
 
 
