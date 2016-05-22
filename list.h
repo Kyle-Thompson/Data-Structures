@@ -456,12 +456,13 @@ list<T, Alloc>::Node::delete_node(Node* node)
  Return value: None
  
  Description:
-  1.
-  2.
-  3.
-  4. 
-  5.
-  6.
+    Makes a(n)...
+  1. empty list.
+  2. list with n instances of 'element'
+  3. list with elements from [first, last).
+  4. duplicate, independant list from rhs.
+  5. list that accepts ownership of all elements in rhs.
+  6. list with all elements in il, preserving order.
  
  Complexity:
   1. Constant.
@@ -472,13 +473,13 @@ list<T, Alloc>::Node::delete_node(Node* node)
   6. Linear in the size of il.
  */
 
-// 1. default constructor
+// 1. default
 template <class T, class Alloc>
 list<T, Alloc>::list()
     : _dummy(Node::create_dummy())
 {}
 
-// 2. fill constructor
+// 2. fill
 template <class T, class Alloc>
 list<T, Alloc>::list(size_type n, const_ref element)
     : _dummy(Node::create_dummy())
@@ -486,7 +487,7 @@ list<T, Alloc>::list(size_type n, const_ref element)
     insert(end(), n, element);
 }
 
-// 3. range constructor
+// 3. range
 template <class T, class Alloc>
 list<T, Alloc>::list(iterator first, iterator last)
     : _dummy(Node::create_dummy())
@@ -494,7 +495,7 @@ list<T, Alloc>::list(iterator first, iterator last)
     insert(end(), first, last);
 }
 
-// 4. copy constructor
+// 4. copy
 template <class T, class Alloc>
 list<T, Alloc>::list(const list<T, Alloc>& rhs)
     : _dummy(Node::create_dummy())
@@ -502,7 +503,7 @@ list<T, Alloc>::list(const list<T, Alloc>& rhs)
     insert(end(), rhs.begin(), rhs.end());
 }
 
-// 5. move constructor
+// 5. move
 template <class T, class Alloc>
 list<T, Alloc>::list(list<T, Alloc>&& rhs)
     : _dummy(Node::create_dummy())
@@ -510,7 +511,7 @@ list<T, Alloc>::list(list<T, Alloc>&& rhs)
     splice(end(), std::move(rhs));
 }
 
-// 6. initializer list constructor
+// 6. initializer list
 template <class T, class Alloc>
 list<T, Alloc>::list(std::initializer_list<T> il)
     : _dummy(Node::create_dummy())
