@@ -13,6 +13,7 @@
     iterator functions like end() and rbegin().
  
  TODO:
+  - Get const_reverse_iterator functions working.
   - Test all functions.
   - Find out if there's a viable way to make insert and erase take a const iterator.
   - Make sure that elements being inserted by range aren't still references to one another.
@@ -88,7 +89,10 @@ private:
     
 /* Iterators */
 private:
-    class list_iterator {
+    class list_iterator : public std::iterator < std::bidirectional_iterator_tag,
+                                                 value_type >
+
+    {
         
     /* Iterator data members */
     protected:
@@ -653,7 +657,7 @@ template <class T, class Alloc>
 inline typename list<T, Alloc>::reverse_iterator
 list<T, Alloc>::rbegin() const
 {
-    return _dummy->prev;
+    return reverse_iterator(end());
 }
 
 
@@ -667,7 +671,7 @@ template <class T, class Alloc>
 inline typename list<T, Alloc>::reverse_iterator
 list<T, Alloc>::rend() const
 {
-    return _dummy;
+    return reverse_iterator(begin());
 }
 
 
@@ -681,7 +685,7 @@ template <class T, class Alloc>
 inline typename list<T, Alloc>::const_reverse_iterator
 list<T, Alloc>::crbegin() const
 {
-    return _dummy->prev;
+    return const_reverse_iterator(end());
 }
 
 
@@ -695,7 +699,7 @@ template <class T, class Alloc>
 inline typename list<T, Alloc>::const_reverse_iterator
 list<T, Alloc>::crend() const
 {
-    return _dummy;
+    return const_reverse_iterator(begin());
 }
 
 
