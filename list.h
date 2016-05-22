@@ -757,7 +757,7 @@ inline T&
 list<T, Alloc>::last() const
 {
     assert(!empty());
-    return _dummy->prev->data;
+    return static_cast<data_node*>(_dummy->prev)->data;
 }
 
 
