@@ -15,8 +15,6 @@
  TODO:
   - Get const_reverse_iterator functions working.
   - Test all functions.
-  - Find out if there's a viable way to make insert and erase take a const iterator.
-  - Make sure that elements being inserted by range aren't still references to one another.
   - Test with valgrind for memory leaks. Like for real. Who knows what's happened with these
     allocators now.
   - Update comments of similar functions (all different kinds of merge and such) to only be
@@ -519,7 +517,7 @@ template <class T, class Alloc>
 list<T, Alloc>::list(std::initializer_list<T> il)
     : _dummy(Node::create_dummy())
 {
-    insert(end(), il);
+    insert(cend(), il);
 }
 
 
@@ -566,7 +564,7 @@ list<T, Alloc>&
 list<T, Alloc>::operator=(const list<T, Alloc>& rhs)
 {
     clear();
-    insert(begin(), rhs.begin(), rhs.end());
+    insert(cbegin(), rhs.begin(), rhs.end());
     
     return *this;
 }
@@ -745,7 +743,7 @@ inline T&
 list<T, Alloc>::front() const
 {
     assert(!empty());
-    return _dummy->next->data;
+    return static_cast<data_node*>(_dummy->next)->data;
 }
 
 
@@ -1058,7 +1056,7 @@ list<T, Alloc>::insert(const_iterator pos, iterator first, iterator last)
     while (first != last)
         insert(pos, *first++);
     
-    return pos;
+    return iterator(pos.node);
 }
 
 /*
@@ -1102,7 +1100,7 @@ list<T, Alloc>::insert(const_iterator pos, std::initializer_list<T> il)
     for (auto it : il)
         insert(pos, it);
     
-    return --pos;
+    return iterator(pos.node->prev);
 }
 
 
