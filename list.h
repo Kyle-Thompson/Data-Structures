@@ -1163,7 +1163,7 @@ list<T, Alloc>::clear() noexcept
 // 1. entire list
 template <class T, class Alloc>
 void
-list<T, Alloc>::splice(const_iterator pos, list& x)
+list<T, Alloc>::splice(const_iterator pos, list<T, Alloc>& x)
 {
     assert(!x.empty());
     splice(pos, x, x.cbegin(), x.cend());
@@ -1172,7 +1172,7 @@ list<T, Alloc>::splice(const_iterator pos, list& x)
 // 1. entire list
 template <class T, class Alloc>
 void
-list<T, Alloc>::splice(const_iterator pos, list&& x)
+list<T, Alloc>::splice(const_iterator pos, list<T, Alloc>&& x)
 {
     assert(!x.empty());
     splice(pos, std::move(x), x.cbegin(), x.cend());
@@ -1181,7 +1181,7 @@ list<T, Alloc>::splice(const_iterator pos, list&& x)
 // 2. single element
 template <class T, class Alloc>
 void
-list<T, Alloc>::splice(const_iterator pos, list& x, const_iterator i)
+list<T, Alloc>::splice(const_iterator pos, list<T, Alloc>& x, const_iterator i)
 {
     splice(pos, x, i, i.next());
 }
@@ -1189,7 +1189,7 @@ list<T, Alloc>::splice(const_iterator pos, list& x, const_iterator i)
 // 2. single element
 template <class T, class Alloc>
 void
-list<T, Alloc>::splice(const_iterator pos, list&& x, const_iterator i)
+list<T, Alloc>::splice(const_iterator pos, list<T, Alloc>&& x, const_iterator i)
 {
     splice(pos, std::move(x), i, i.next());
 }
@@ -1197,7 +1197,7 @@ list<T, Alloc>::splice(const_iterator pos, list&& x, const_iterator i)
 // 3. element range
 template <class T, class Alloc>
 void
-list<T, Alloc>::splice(const_iterator pos, list& x, const_iterator first, const_iterator last)
+list<T, Alloc>::splice(const_iterator pos, list<T, Alloc>& x, const_iterator first, const_iterator last)
 {
     assert(first != last);
     
@@ -1214,7 +1214,7 @@ list<T, Alloc>::splice(const_iterator pos, list& x, const_iterator first, const_
 // 3. element range
 template <class T, class Alloc>
 void
-list<T, Alloc>::splice(const_iterator pos, list&& x, const_iterator first, const_iterator last)
+list<T, Alloc>::splice(const_iterator pos, list<T, Alloc>&& x, const_iterator first, const_iterator last)
 {
     assert(first != last);
     
@@ -1278,28 +1278,9 @@ list<T, Alloc>::remove_if(Predicate pred)
 
 /*
  Function: unique
- Parameters: None
- Return value: None
- 
- Description:
-    Removes all elements such that it and it's previous
-    are equal.
- 
- Complexity: Linear in the size of the list.
- */
-template <class T, class Alloc>
-void
-list<T, Alloc>::unique()
-{
-    unique([](iterator first, iterator second){ return *first == *second; });
-}
-
-
-/*
- Function: unique
- Parameters: 
-  - predicate: Determines whether or not an element should be
-               removed.
+ Parameters:
+ - predicate: Determines whether or not an element should be
+ removed.
  Return value: None
  
  Description:
@@ -1308,6 +1289,14 @@ list<T, Alloc>::unique()
  
  Complexity: Linear in the size of the list.
  */
+
+template <class T, class Alloc>
+void
+list<T, Alloc>::unique()
+{
+    unique([](iterator first, iterator second){ return *first == *second; });
+}
+
 template <class T, class Alloc>
 template <class BinaryPredicate>
 void
@@ -1343,6 +1332,7 @@ list<T, Alloc>::unique(BinaryPredicate predicate)
     involve the destruction of an existing node and construction
     of a new one, rather than reconnecting pointers.
  */
+
 template <class T, class Alloc>
 void
 list<T, Alloc>::merge(list<T, Alloc>& other)
