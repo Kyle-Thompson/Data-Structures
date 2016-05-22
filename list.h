@@ -25,6 +25,7 @@
   - Make splice(pos, list) constant.
   - Find out what emplace constructed means and how it applies to range constructor.
   - See what iterators can be made into const iterators.
+  - Look into perfect forwarding to reduce code duplication for list& and list&&.
  */
 
 
