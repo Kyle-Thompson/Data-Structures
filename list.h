@@ -983,15 +983,26 @@ list<T, Alloc>::pop_back()
  Parameters:
   - pos: An iterator at the positition which the new element will be
          inserted in front of.
+  - n: The number of duplicate elements to be inserted.
   - element: The new item to be inserted.
+  - first: The first element in the range of elements to be copied.
+  - last: One element past the last to be inserted.
+  - il: An initializer list of new values to be added to the list.
  Return value: An iterator pointing to the newly inserted element.
  
  Description:
-    Inserts an element into the list at a given position indicated by 
-    the pos iterator.
+  1. Adds an element into the list before pos.
+  2. Adds an element n times into the list at a given position.
+  3. Adds elements [first, last) into the list given by an
+     iterator range.
+  4. Adds an element into the list before pos.
+  5. Adds all the items in an initializer list to the list at a given
+     position.
  
- Complexity: Constant.
+ Complexity: Linear in the number of elements being inserted.
  */
+
+// 1. single element
 template <class T, class Alloc>
 typename list<T, Alloc>::iterator
 list<T, Alloc>::insert(const_iterator pos, const_ref element)
@@ -1006,22 +1017,7 @@ list<T, Alloc>::insert(const_iterator pos, const_ref element)
     return iterator(node);
 }
 
-
-/*
- Function: insert
- Parameters:
-  - pos: An iterator at the position which the new elements will be
-         inserted in front of.
-  - n: The number of duplicate elements to be inserted.
-  - element: The element to be inserted n times.
- Return value: An iterator to the first element in the group of newly
-               inserted elements.
- 
- Description:
-    Adds an element n times into the list at a given position.
- 
- Complexity: Linear in number of elements to be inserted.
- */
+// 2. fill
 template <class T, class Alloc>
 typename list<T, Alloc>::iterator
 list<T, Alloc>::insert(const_iterator pos, size_type n, const_ref element)
@@ -1032,23 +1028,7 @@ list<T, Alloc>::insert(const_iterator pos, size_type n, const_ref element)
     return insert(pos, element);
 }
 
-
-/*
- Function: insert
- Parameters:
-  - pos: An iterator at the position which the new elements will be
-         inserted in front of.
-  - first: The first element in the range of elements to be copied.
-  - last: The last element in the range of elements to be copied and
-          inserted. This element is not included in the insertion.
- Return value: An iterator to the first element in the range of newly 
-               inserted elements.
- 
- Description:
-    Copies elements [first, last) into the list at a given position.
- 
- Complexity: Linear in the number of elements between first and last.
- */
+// 3. range
 template <class T, class Alloc>
 typename list<T, Alloc>::iterator
 list<T, Alloc>::insert(const_iterator pos, iterator first, iterator last)
@@ -1059,19 +1039,7 @@ list<T, Alloc>::insert(const_iterator pos, iterator first, iterator last)
     return iterator(pos.node);
 }
 
-/*
- Function: insert
- Parameters:
-  - pos: An iterator at the position which the new element will be
-         inserted in front of.
-  - element: The new item to be inserted.
- 
- Description:
-    Inserts an element into the list at a given position indicated by
-    the pos iterator.
- 
- Complexity: Constant.
- */
+// 4. move
 template <class T, class Alloc>
 typename list<T, Alloc>::iterator
 list<T, Alloc>::insert(const_iterator pos, rvalue_ref element)
@@ -1079,20 +1047,7 @@ list<T, Alloc>::insert(const_iterator pos, rvalue_ref element)
     return insert(pos, element);
 }
 
-
-/*
- Function: insert
- Parameters:
-  - pos: An iterator at the position which the new element will be
-         inserted in front of.
-  - il: An initializer list of new values to be added to the list.
- 
- Description:
-    Adds all the items in an initializer list to the list at a given 
-    position.
- 
- Complexity: Linear in the size of the initializer list.
- */
+// 5. initializer list
 template <class T, class Alloc>
 typename list<T, Alloc>::iterator
 list<T, Alloc>::insert(const_iterator pos, std::initializer_list<T> il)
