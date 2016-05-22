@@ -13,26 +13,19 @@
     iterator functions like end() and rbegin().
  
  TODO:
-  - Find out how to correctly use an allocator and use it.
   - Test all functions.
   - Find out if there's a viable way to make insert and erase take a const iterator.
   - Make sure that elements being inserted by range aren't still references to one another.
   - Test with valgrind for memory leaks. Like for real. Who knows what's happened with these
     allocators now.
-  - Find a good category for operator=.
   - Find how to correctly implement const_iterator.
   - Update comments of similar functions (all different kinds of merge and such) to only be 
     one descriptor comment.
   - Find out what merge(&&, comp) needs different from merge(&, comp). (Also insert& and &&)
-  - Find out if iterator -> should return a pointer or reference.
   - See how much code can be moved from derived iterators to list_iterator.
   - Make list_iterator abstract.
-  - Find out why this works with clang but not g++.
   - Find out how the current use of allocators actually works.
-  - Consider node heirarchy with node inheriting from dummy node.
-  - Find a better way to do push_front than the horrible hacky way it is now.
   - Make splice(pos, list) constant.
-  - See if it's possible to remove the need for the self check in move_before.
   - Find out what emplace constructed means and how it applies to range constructor.
   - See what iterators can be made into const iterators.
  */
@@ -57,6 +50,7 @@ public:
     typedef std::size_t size_type;
     typedef T           value_type;
     typedef T*          pointer;
+    typedef const T*    const_ptr;
     typedef T&          reference;
     typedef T&&         rvalue_ref;
     typedef const T&    const_ref;
@@ -69,13 +63,10 @@ private:
     public:
         Node* prev;
         Node* next;
-        T data;
         
-        Node();                   // Dummy node constructor
-        Node(const_ref, Node*);   // Data node constructor
-        Node(rvalue_ref, Node*);  // Data node constructor
-        
-        void detach();
+        Node();
+
+        Node& detach();
         void move_before(Node*);
         void insert_before(Node*);
         
@@ -85,24 +76,15 @@ private:
         static void  delete_node(Node*);
     };
     
-//    class dummy_node : public Node {
-//    public:
-//        dummy_node();
-//    };
-//    
-//    class data_node : public Node {
-//    public:
-//        using Node::next;
-//        using Node::prev;
-//        T data;
-//        
-//        data_node(const_ref, Node*);
-//        data_node(rvalue_ref, Node*);
-//        
-//        void detach();
-//        void move_before(Node*);
-//        void insert_before(Node*);
-//    };
+    class data_node : public Node {
+    public:
+        using Node::next;
+        using Node::prev;
+        T data;
+        
+        data_node(const_ref, Node*);
+        data_node(rvalue_ref, Node*);
+    };
 
     
 /* Iterators */
@@ -115,7 +97,7 @@ public:
         
     public:
         list_iterator(Node* n) : node(n) {}
-        bool operator==(const list_iterator& rhs) { return node->data == rhs.node->data; }
+        bool operator==(const list_iterator& rhs) { return node == rhs.node; }
         bool operator!=(const list_iterator& rhs) { return !(*this == rhs); }
     };
     
@@ -130,8 +112,8 @@ public:
     /* Iterator member functions */
     public:
         iterator(Node* n) : list_iterator(n) {}
-        reference operator*()  { return node->data; }
-        reference operator->() { return node->data; }
+        reference operator*()  { return static_cast<data_node*>(node)->data; }
+        pointer operator->() { return std::addressof(static_cast<data_node*>(node)->data); }
         iterator& operator++() { node = node->next; return *this; }
         iterator operator++(int) { iterator temp(*this); node = node->next; return temp; }
         iterator& operator--() { node = node->prev; return *this; }
@@ -151,8 +133,8 @@ public:
     /* Iterator member functions */
     public:
         const_iterator(Node* n) : list_iterator(n) {}
-        const_ref operator*()  { return node->data; }
-        const_ref operator->() { return node->data; }
+        const_ref operator*()  { return static_cast<data_node*>(node)->data; }
+        const_ptr operator->() { return std::addressof(static_cast<data_node*>(node)->data); }
         const_iterator& operator++() { node = node->next; return *this; }
         const_iterator operator++(int) { const_iterator temp(*this); node = node->next; return temp; }
         const_iterator& operator--() { node = node->prev; return *this; }
@@ -216,11 +198,11 @@ public:
     void push_back(const_ref);
     void push_back(rvalue_ref);
     template <class... Args>
-        void emplace_front(Args&&...);                                                 // Not yet implemented.
+    void emplace_front(Args&&...);
     template <class... Args>
-        void emplace_back(Args&&...);                                                  // Not yet implemented.
+        void emplace_back(Args&&...);
     template <class... Args>
-        iterator emplace(const_iterator, Args&&...);                          // Not yet implemented.
+        iterator emplace(const_iterator, Args&&...);
     void pop_front();
     void pop_back();
     iterator insert(iterator, const_ref);
@@ -230,7 +212,7 @@ public:
     iterator insert(iterator, std::initializer_list<value_type>);
     iterator erase(iterator);
     iterator erase(iterator, iterator);
-    void swap(list<T, Alloc>&);                                                               // Unknown if working.
+    void swap(list<T, Alloc>&);
     void clear() noexcept;
     
     /* Operations */
@@ -264,10 +246,14 @@ public:
 // Node
 
 /*
- Function: Node Constructor
- Parameters:
-  - element: The data that the node stores.
-  - next_node: The node which will be after this node.
+ Function: dummy node constructor
+ Parameters: None
+ 
+ Description:
+    Constructs the node that will act as a sentienl
+    in the list.
+ 
+ Complexity: Constant.
  */
 template <class T, class Alloc>
 list<T, Alloc>::Node::Node()
@@ -276,15 +262,27 @@ list<T, Alloc>::Node::Node()
 {}
 
 
+/*
+ Function: data node constructor
+ Parameters:
+ - element: The data that the node stores.
+ - next_node: The node which will be after this node.
+ 
+ Desctiption:
+    Constructs a node that holds a piece of data.
+ 
+ Complexity: Constant.
+ */
+
 template <class T, class Alloc>
-list<T, Alloc>::Node::Node(const_ref element, Node* next_node)
+list<T, Alloc>::data_node::data_node(const_ref element, Node* next_node)
     : data(element)
 {
-    insert_before(next_node);
+    this->insert_before(next_node);
 }
 
 template <class T, class Alloc>
-list<T, Alloc>::Node::Node(rvalue_ref element, Node* next_node)
+list<T, Alloc>::data_node::data_node(rvalue_ref element, Node* next_node)
     : data(std::move(element))
 {
     insert_before(next_node);
@@ -292,10 +290,19 @@ list<T, Alloc>::Node::Node(rvalue_ref element, Node* next_node)
 
 
 /*
- Function: unhook
+ Function: detach
+ Parameters: None
+ Return value: A reference to this node.
+ 
+ Description:
+    Detaches this node from its surrounding list by
+    connecting together its two neighbour nodes and
+    setting its next and prev pointers to null.
+ 
+ Complexity: Constant.
  */
 template <class T, class Alloc>
-void
+typename list<T, Alloc>::Node&
 list<T, Alloc>::Node::detach()
 {
     next->prev = this->prev;
@@ -315,6 +322,8 @@ list<T, Alloc>::Node::detach()
  Description:
     Takes a detached node and inserts it in front of another
     node.
+ 
+ Complexity: Constant.
  */
 template <class T, class Alloc>
 void
@@ -323,8 +332,8 @@ list<T, Alloc>::Node::insert_before(Node* next_node)
     next = next_node;
     prev = next_node->prev;
     
-    next_node->prev->next = this;
-    next_node->prev = this;
+    prev->next = this;
+    next->prev = this;
 }
 
 
@@ -357,6 +366,11 @@ list<T, Alloc>::Node::move_before(Node* next_node)
  Function: create dummy
  Parameters: None
  Return value: Node*
+ 
+ Description:
+    Creates an empty node to act as a sentinel in a list.
+ 
+ Complexity: Constant.
  */
 template <class T, class Alloc>
 typename list<T, Alloc>::Node*
@@ -371,28 +385,35 @@ list<T, Alloc>::Node::create_dummy()
 
 
 /*
+ Function: create_node
+ Parameters:
+  - element: The element which will be stored in the new
+             node.
+  - next_node: The node in the list that this node will be
+               created in front of.
+ Return value: A pointer to the new node.
  
+ Description:
+    Creates a new node to hold 'element'.
+ 
+ Complexity: Constant.
  */
 template <class T, class Alloc>
 typename list<T, Alloc>::Node*
 list<T, Alloc>::Node::create_node(const_ref element, Node* next_node)
 {
-    typename Alloc::template rebind<Node>::other alloc;
+    typename Alloc::template rebind<data_node>::other alloc;
     auto node = alloc.allocate(1);
     alloc.construct(node, element, next_node);
     
     return node;
 }
 
-
-/*
- 
- */
 template <class T, class Alloc>
 typename list<T, Alloc>::Node*
 list<T, Alloc>::Node::create_node(rvalue_ref element, Node* next_node)
 {
-    typename Alloc::template rebind<Node>::other alloc;
+    typename Alloc::template rebind<data_node>::other alloc;
     auto node = alloc.allocate(1);
     alloc.construct(node, std::move(element), next_node);
     
@@ -401,7 +422,15 @@ list<T, Alloc>::Node::create_node(rvalue_ref element, Node* next_node)
 
 
 /*
+ Function: delete_node
+ Parameters:
+  - node: The node to be deleted.
+ Return value: None
  
+ Description:
+    Deletes a given node.
+ 
+ Complexity: Constant.
  */
 template <class T, class Alloc>
 void
@@ -598,7 +627,6 @@ template <class T, class Alloc>
 inline typename list<T, Alloc>::const_iterator
 list<T, Alloc>::cbegin() const
 {
-    assert(!empty());
     return const_iterator(_dummy->next);
 }
 
@@ -786,6 +814,8 @@ list<T, Alloc>::operator[](size_type index) const
  Complexity: Linear in the current size of the list
              and the number of elements replacing them.
  */
+
+// 1. assign range
 template <class T, class Alloc>
 void
 list<T, Alloc>::assign(iterator first, iterator last)
@@ -794,6 +824,7 @@ list<T, Alloc>::assign(iterator first, iterator last)
     insert(begin(), first, last);
 }
 
+// 2. assign fill
 template <class T, class Alloc>
 void
 list<T, Alloc>::assign(size_type n, const_ref element)
@@ -802,6 +833,7 @@ list<T, Alloc>::assign(size_type n, const_ref element)
     insert(begin(), n, element);
 }
 
+// 3. assign initializer list
 template <class T, class Alloc>
 void
 list<T, Alloc>::assign(std::initializer_list<T> il)
@@ -822,6 +854,7 @@ list<T, Alloc>::assign(std::initializer_list<T> il)
  
  Complexity: Constant
  */
+
 template <class T, class Alloc>
 void
 list<T, Alloc>::push_front(const T& element)
@@ -848,6 +881,7 @@ list<T, Alloc>::push_front(T&& element)
  
  Complexity: Constant
  */
+
 template <class T, class Alloc>
 void
 list<T, Alloc>::push_back(const T& element)
@@ -864,16 +898,20 @@ list<T, Alloc>::push_back(T&& element)
 
 
 /*
- Function: emplace_front
+ Function: emplace
  Parameters:
   - args: Arguments used to construct the new T object.
- Return value: None
+  - pos: The iterator to insert the new element before.
+ Return value: None (front and back) or an iterator to the
+               new element.
  
  Description:
-    Creates a new T object and adds it to the front of the list.
+    Creates a new T object and adds it to the front, back or
+    a given position in the list.
  
- Complexity: O(T(args)) -> Complexity of T(args) constructor.
+ Complexity: Complexity of T(args) constructor.
  */
+
 template <class T, class Alloc>
 template <class... Args>
 void
@@ -882,18 +920,6 @@ list<T, Alloc>::emplace_front(Args&&... args)
     emplace(begin().node, std::forward<Args>(args)...);
 }
 
-
-/*
- Function: emplace_back
- Parameters:
- - args: Arguments used to construct the new T object.
- Return value: None
- 
- Description:
-    Creates a new T object and adds it to the back of the list.
- 
- Complexity: O(T(args)) -> Complexity of T(args) constructor.
- */
 template <class T, class Alloc>
 template <class... Args>
 void
@@ -921,7 +947,7 @@ list<T, Alloc>::emplace(const_iterator pos, Args&&... args)
  Description:
     Removes the first element in the list from the list and returns it.
  
- Complexity: O(1) -> Constant.
+ Complexity: Constant.
  */
 template <class T, class Alloc>
 void
@@ -939,7 +965,7 @@ list<T, Alloc>::pop_front()
  Description:
     Removes the first element in the list from the list and returns it.
  
- Complexity: O(1) -> Constant.
+ Complexity: Constant.
  */
 template <class T, class Alloc>
 void
@@ -962,7 +988,7 @@ list<T, Alloc>::pop_back()
     Inserts an element into the list at a given position indicated by 
     the pos iterator.
  
- Complexity: O(1) -> Constant.
+ Complexity: Constant.
  */
 template <class T, class Alloc>
 typename list<T, Alloc>::iterator
@@ -992,7 +1018,7 @@ list<T, Alloc>::insert(iterator pos, const_ref element)
  Description:
     Adds an element n times into the list at a given position.
  
- Complexity: O(n) -> Linear in number of elements to be inserted.
+ Complexity: Linear in number of elements to be inserted.
  */
 template <class T, class Alloc>
 typename list<T, Alloc>::iterator
@@ -1019,8 +1045,7 @@ list<T, Alloc>::insert(iterator pos, size_type n, const_ref element)
  Description:
     Copies elements [first, last) into the list at a given position.
  
- Complexity: O(dist(first, last)) -> Linear in the number of elements
-                                     between first and last.
+ Complexity: Linear in the number of elements between first and last.
  */
 template <class T, class Alloc>
 typename list<T, Alloc>::iterator
@@ -1043,7 +1068,7 @@ list<T, Alloc>::insert(iterator pos, iterator first, iterator last)
     Inserts an element into the list at a given position indicated by
     the pos iterator.
  
- Complexity: O(1) -> Constant.
+ Complexity: Constant.
  */
 template <class T, class Alloc>
 typename list<T, Alloc>::iterator
@@ -1064,7 +1089,7 @@ list<T, Alloc>::insert(iterator pos, rvalue_ref element)
     Adds all the items in an initializer list to the list at a given 
     position.
  
- Complexity: O(|il|) -> Linear in the size of the initializer list.
+ Complexity: Linear in the size of the initializer list.
  */
 template <class T, class Alloc>
 typename list<T, Alloc>::iterator
@@ -1129,7 +1154,7 @@ list<T, Alloc>::erase(iterator first, iterator last)
  Description: Swaps the contents of this list with the elements in rhs
               and vice versa.
  
- Complexity: O(1) -> Constant.
+ Complexity: Constant.
  */
 template <class T, class Alloc>
 void
@@ -1148,7 +1173,7 @@ list<T, Alloc>::swap(list<T, Alloc>& rhs)
  Description:
     Removes all elements in the list.
  
- Complexity: O(_size) -> Linear in the size of the list.
+ Complexity: Linear in the size of the list.
  */
 template <class T, class Alloc>
 inline void
@@ -1161,14 +1186,24 @@ list<T, Alloc>::clear() noexcept
 /*
  Function: splice
  Parameters:
-  - 
+  - pos: The position which all the new elements should be added
+         behind.
+  - x: The list from which the new elements are being spliced in.
+  - i: The index of the element in x to be spliced in.
+  - first: An iterator to the first element to be moved to this list.
+  - last: An iterator to one past the last element to be moved to
+          this list.
  Return value: None
  
  Description:
-    
+  1. Moves the entirety of another list into this list behind pos.
+  2. Moves a particular element from x into this list behind pos.
+  3. Moves a range of elements from x into this list behind pos.
  
  Complexity: Linear in the number of elements being spliced in.
  */
+
+// 1. entire list
 template <class T, class Alloc>
 void
 list<T, Alloc>::splice(const_iterator pos, list& x)
@@ -1177,6 +1212,7 @@ list<T, Alloc>::splice(const_iterator pos, list& x)
     splice(pos, x, x.cbegin(), x.cend());
 }
 
+// 1. entire list
 template <class T, class Alloc>
 void
 list<T, Alloc>::splice(const_iterator pos, list&& x)
@@ -1185,6 +1221,7 @@ list<T, Alloc>::splice(const_iterator pos, list&& x)
     splice(pos, std::move(x), x.cbegin(), x.cend());
 }
 
+// 2. single element
 template <class T, class Alloc>
 void
 list<T, Alloc>::splice(const_iterator pos, list& x, const_iterator i)
@@ -1192,6 +1229,7 @@ list<T, Alloc>::splice(const_iterator pos, list& x, const_iterator i)
     splice(pos, x, i, i.next());
 }
 
+// 2. single element
 template <class T, class Alloc>
 void
 list<T, Alloc>::splice(const_iterator pos, list&& x, const_iterator i)
@@ -1199,6 +1237,7 @@ list<T, Alloc>::splice(const_iterator pos, list&& x, const_iterator i)
     splice(pos, std::move(x), i, i.next());
 }
 
+// 3. element range
 template <class T, class Alloc>
 void
 list<T, Alloc>::splice(const_iterator pos, list& x, const_iterator first, const_iterator last)
@@ -1215,6 +1254,7 @@ list<T, Alloc>::splice(const_iterator pos, list& x, const_iterator first, const_
     pos.node->prev = last.node;
 }
 
+// 3. element range
 template <class T, class Alloc>
 void
 list<T, Alloc>::splice(const_iterator pos, list&& x, const_iterator first, const_iterator last)
@@ -1241,8 +1281,8 @@ list<T, Alloc>::splice(const_iterator pos, list&& x, const_iterator first, const
  Description:
     Removes the first occurence of element in the list.
  
- Complexity: O(_size) -> Linear in the index of the element or the size 
-                         of the list if the element does not exist.
+ Complexity: Linear in the index of the element or the size of the 
+             list if the element does not exist.
  */
 template <class T, class Alloc>
 void
@@ -1263,7 +1303,7 @@ list<T, Alloc>::remove(const_ref element) {
  Description:
     Removes from the list all elements that satisfy a predicate.
  
- Complexity: O(_size) -> Linear in the size of the list.
+ Complexity: Linear in the size of the list.
  */
 template <class T, class Alloc>
 template <class Predicate>
@@ -1288,7 +1328,7 @@ list<T, Alloc>::remove_if(Predicate pred)
     Removes all elements such that it and it's previous
     are equal.
  
- Complexity: O(_size) -> Linear in the size of the list.
+ Complexity: Linear in the size of the list.
  */
 template <class T, class Alloc>
 void
@@ -1309,7 +1349,7 @@ list<T, Alloc>::unique()
  Removes all elements such that it and it's previous
  satisfy a predicate.
  
- Complexity: O(_size) -> Linear in the size of the list.
+ Complexity: Linear in the size of the list.
  */
 template <class T, class Alloc>
 template <class BinaryPredicate>
