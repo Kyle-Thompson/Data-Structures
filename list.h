@@ -23,7 +23,6 @@
     one descriptor comment.
   - Find out what merge(&&, comp) needs different from merge(&, comp). (Also insert& and &&)
   - See how much code can be moved from derived iterators to list_iterator.
-  - Make list_iterator abstract.
   - Find out how the current use of allocators actually works.
   - Make splice(pos, list) constant.
   - Find out what emplace constructed means and how it applies to range constructor.
@@ -88,7 +87,7 @@ private:
 
     
 /* Iterators */
-public:
+private:
     class list_iterator {
         
     /* Iterator data members */
@@ -101,7 +100,7 @@ public:
         bool operator!=(const list_iterator& rhs) { return !(*this == rhs); }
     };
     
-    
+public:
     class iterator : public list_iterator {
     
         friend class list<T, Alloc>;
