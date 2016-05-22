@@ -19,8 +19,7 @@
   - Make sure that elements being inserted by range aren't still references to one another.
   - Test with valgrind for memory leaks. Like for real. Who knows what's happened with these
     allocators now.
-  - Find how to correctly implement const_iterator.
-  - Update comments of similar functions (all different kinds of merge and such) to only be 
+  - Update comments of similar functions (all different kinds of merge and such) to only be
     one descriptor comment.
   - Find out what merge(&&, comp) needs different from merge(&, comp). (Also insert& and &&)
   - See how much code can be moved from derived iterators to list_iterator.
@@ -208,13 +207,13 @@ public:
         iterator emplace(const_iterator, Args&&...);
     void pop_front();
     void pop_back();
-    iterator insert(iterator, const_ref);
-    iterator insert(iterator, size_type, const_ref);
-    iterator insert(iterator, iterator, iterator);
-    iterator insert(iterator, rvalue_ref);
-    iterator insert(iterator, std::initializer_list<value_type>);
-    iterator erase(iterator);
-    iterator erase(iterator, iterator);
+    iterator insert(const_iterator, const_ref);
+    iterator insert(const_iterator, size_type, const_ref);
+    iterator insert(const_iterator, iterator, iterator);
+    iterator insert(const_iterator, rvalue_ref);
+    iterator insert(const_iterator, std::initializer_list<value_type>);
+    iterator erase(const_iterator);
+    iterator erase(const_iterator, const_iterator);
     void swap(list<T, Alloc>&);
     void clear() noexcept;
     
@@ -312,6 +311,8 @@ list<T, Alloc>::Node::detach()
     prev->next = this->next;
     
     next = prev = nullptr;
+    
+    return *this;
 }
 
 
@@ -869,7 +870,7 @@ template <class T, class Alloc>
 void
 list<T, Alloc>::push_front(T&& element)
 {
-    insert(begin(), std::move(element));
+    insert(cbegin(), std::move(element));
 }
 
 
@@ -896,7 +897,7 @@ template <class T, class Alloc>
 void
 list<T, Alloc>::push_back(T&& element)
 {
-    insert(end(), std::move(element));
+    insert(cend(), std::move(element));
 }
 
 
@@ -995,7 +996,7 @@ list<T, Alloc>::pop_back()
  */
 template <class T, class Alloc>
 typename list<T, Alloc>::iterator
-list<T, Alloc>::insert(iterator pos, const_ref element)
+list<T, Alloc>::insert(const_iterator pos, const_ref element)
 {
     auto node = Node::create_node(element, pos.node);
     
@@ -1025,7 +1026,7 @@ list<T, Alloc>::insert(iterator pos, const_ref element)
  */
 template <class T, class Alloc>
 typename list<T, Alloc>::iterator
-list<T, Alloc>::insert(iterator pos, size_type n, const_ref element)
+list<T, Alloc>::insert(const_iterator pos, size_type n, const_ref element)
 {
     while (--n > 0)
         insert(pos, element);
@@ -1052,7 +1053,7 @@ list<T, Alloc>::insert(iterator pos, size_type n, const_ref element)
  */
 template <class T, class Alloc>
 typename list<T, Alloc>::iterator
-list<T, Alloc>::insert(iterator pos, iterator first, iterator last)
+list<T, Alloc>::insert(const_iterator pos, iterator first, iterator last)
 {
     while (first != last)
         insert(pos, *first++);
@@ -1075,7 +1076,7 @@ list<T, Alloc>::insert(iterator pos, iterator first, iterator last)
  */
 template <class T, class Alloc>
 typename list<T, Alloc>::iterator
-list<T, Alloc>::insert(iterator pos, rvalue_ref element)
+list<T, Alloc>::insert(const_iterator pos, rvalue_ref element)
 {
     return insert(pos, element);
 }
@@ -1096,7 +1097,7 @@ list<T, Alloc>::insert(iterator pos, rvalue_ref element)
  */
 template <class T, class Alloc>
 typename list<T, Alloc>::iterator
-list<T, Alloc>::insert(iterator pos, std::initializer_list<T> il)
+list<T, Alloc>::insert(const_iterator pos, std::initializer_list<T> il)
 {
     for (auto it : il)
         insert(pos, it);
@@ -1123,7 +1124,7 @@ list<T, Alloc>::insert(iterator pos, std::initializer_list<T> il)
  */
 template <class T, class Alloc>
 typename list<T, Alloc>::iterator
-list<T, Alloc>::erase(iterator pos)
+list<T, Alloc>::erase(const_iterator pos)
 {
     auto node = pos.node;
     
@@ -1134,17 +1135,17 @@ list<T, Alloc>::erase(iterator pos)
     
     --_size;
     
-    return ++pos;
+    return iterator(pos.node->next);
 }
 
 template <class T, class Alloc>
 typename list<T, Alloc>::iterator
-list<T, Alloc>::erase(iterator first, iterator last)
+list<T, Alloc>::erase(const_iterator first, const_iterator last)
 {
     while (first != last)
         erase(first++);
     
-    return last;
+    return iterator(last.node);
 }
 
 
@@ -1182,7 +1183,7 @@ template <class T, class Alloc>
 inline void
 list<T, Alloc>::clear() noexcept
 {
-    erase(begin(), end());
+    erase(cbegin(), cend());
 }
 
 
