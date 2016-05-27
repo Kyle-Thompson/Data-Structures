@@ -6,8 +6,10 @@
 #ifndef Tree_h
 #define Tree_h
 
+#include <memory>
+
 template <class T>
-class Tree {
+class tree {
     
 /* Type definitions */
 public:
@@ -30,10 +32,43 @@ protected:
     };
     
 
+/* Data members */
+protected:
+    Node* _root = nullptr;
+    size_type _size = 0;
+    std::allocator<T> alloc;
+    
+    
 /* Member functions */
 public:
-    virtual void add(const_ref) = 0;
-    virtual void remove(const_ref) = 0;
+    size_type size();
+    bool empty();
+    
 };
+
+
+
+// Capacity
+
+/*
+ 
+ */
+template <class T>
+inline typename tree<T>::size_type
+tree<T>::size()
+{
+    return _size;
+}
+
+
+/*
+ 
+ */
+template <class T>
+inline bool
+tree<T>::empty()
+{
+    return _size == 0;
+}
 
 #endif /* Tree_h */
