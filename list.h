@@ -678,7 +678,7 @@ template <class T, class Alloc>
 inline typename list<T, Alloc>::const_reverse_iterator
 list<T, Alloc>::crbegin() const
 {
-    return const_reverse_iterator(end());
+    return const_reverse_iterator(cend());
 }
 
 
@@ -692,7 +692,7 @@ template <class T, class Alloc>
 inline typename list<T, Alloc>::const_reverse_iterator
 list<T, Alloc>::crend() const
 {
-    return const_reverse_iterator(begin());
+    return const_reverse_iterator(cbegin());
 }
 
 
