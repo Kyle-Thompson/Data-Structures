@@ -1,3 +1,8 @@
+/*
+ preamble.
+ */
+
+
 #ifndef Tree_h
 #define Tree_h
 
@@ -21,6 +26,7 @@ protected:
         
     public:
         Node* parent;
+        T data;
     };
     
 
