@@ -100,6 +100,173 @@ private:
 };
 
 
+
+// Node
+
+/*
+ *
+ */
+template <class T>
+redblack_tree<T>::Node::Node()
+: sentinel(true)
+, index((this-elements)/sizeof(Node)) // this could be so wrong.
+, colour(false)
+{}
+
+
+/*
+ *
+ */
+template<class T>
+redblack_tree<T>::Node::Node(const_ref element)
+: data(&element)
+, sentinel(false)
+, index((this-elements)/sizeof(Node)) // this could be so wrong.
+, colour(true)
+{
+    // check if this node is on the bottom row.
+    if (log2(index) == log2(array_size))
+	resize();
+
+    // create sentinel nodes
+    alloc.construct(left);
+    alloc.construct(right);
+
+    /*Node::*/insert(this);
+/*
+    // root check
+    if (index == 0) {
+	colour = false;
+	return;
+    }
+
+    // If parent node is black, nothing to do.
+    if (!parent()->colour)
+	return;
+
+    if (uncle()->colour) */
+}
+
+
+/*
+ *
+ */
+template <class T>
+static void 
+insert(Node*);
+
+
+/*
+ *
+ */
+template <class T>
+void 
+rotate_right();
+
+
+/*
+ *
+ */
+template <class T>
+void 
+rotate_left()
+{
+}
+
+
+/*
+ *
+ */
+template <class T>
+redblack_tree<T>::size_type
+redblack_tree<T>::Node::parent_index()
+{ 
+    return (index - 2 + index%2) / 2; 
+}
+
+
+/*
+ *
+ */
+template <class T>
+redblack_tree<T>::size_type 
+redblack_tree<T>::Node::left_index()
+{
+    return 2 * index + 1; 
+}
+
+
+/*
+ *
+ */
+template <class T>
+redblack_tree<T>::size_type 
+redblack_tree<T>::Node::right_index()
+{ 
+    return 2*index+2; 
+}
+
+
+/*
+ *
+ */
+template <class T>
+redblack_tree<T>::Node::Node* 
+redblack_tree<T>::Node::parent()
+{
+    return &elements[(index - 2 + index%2) / 2]; 
+}
+
+
+/*
+ *
+ */
+template <class T>
+redblack_tree<T>::Node::Node* 
+redblack_tree<T>::Node::sibling() 
+{ 
+    return &elements[index + 1 - 2*(index%2)]; 
+}
+
+
+/*
+ *
+ */
+template <class T>
+redblack_tree<T>::Node* 
+redblack_tree<T>::Node::uncle() 
+{ 
+    return parent()->sibling(); 
+}
+
+
+/*
+ *
+ */
+template <class T>
+redblack_tree<T>::Node* 
+redblack_tree<T>::Node::left() 
+{ 
+    return &elements[2*index+1]; 
+}
+
+
+/*
+ *
+ */
+template <class T>
+redblack_tree<T>::Node* 
+redblack_tree<T>::Node::right() 
+{ 
+    return &elements[2*index+2]; 
+}
+
+
+// Tree
+
+/*
+ *
+ */
 template <class T>
 redblack_tree<T>::redblack_tree(size_type initial_size)
 : size(0)
@@ -109,7 +276,9 @@ redblack_tree<T>::redblack_tree(size_type initial_size)
     alloc.construct(elements);
 }
 
-
+/*
+ *
+ */
 template <class T>
 redblack_tree<T>::add(const_ref element)
 {
