@@ -153,7 +153,10 @@ redblack_tree<T>::Node::Node(const_ref element)
  */
 template <class T>
 static void 
-insert(Node*);
+insert(Node*)
+{
+    
+}
 
 
 /*
