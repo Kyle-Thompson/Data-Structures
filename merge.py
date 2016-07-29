@@ -1,17 +1,52 @@
+# the entire issue is determining where l should go next. Might be impossible to do in constant time.
+
 from random import shuffle
 num = 10
 a = range(num)
 shuffle(a)
-#a = [3, 4, 5, 0, 1, 2]
-#a = [5, 2, 3, 1, 0, 4]
 print a, '\n'
 def merge_sort(arr):
-    #swap = lambda a, b: arr[a], arr[b] = arr[b], arr[a]
-    def display(b, m, e, l, r):
-        s = ''
-        s += '[' + ' '.join([str(x) for x in arr[b:m]]) + '] '
-        s += '[' + ' '.join([str(x) for x in arr[m:e]]) + ']'
-        print s, l, r
+    def swap(a, b): arr[a], arr[b] = arr[b], arr[a]
+        
+    def display(b, m, e, l, r, n):
+        index = 0
+        s = '['
+        for x in arr[b:m]:
+            if index == l:
+                s += '\033[94m'
+            elif index == r:
+                s += '\033[92m'
+            elif index == n:
+                s += '\033[95m'
+            elif index < n:
+                s += '\033[93m'
+
+            s += str(x)
+            if x != arr[m-1]:
+                s += ' '
+            index += 1
+        
+            s += '\033[0m'
+        s += ']['
+        for x in arr[m:e]:
+            if index == n:
+                s += '\033[95m'
+            elif index < n:
+                s += '\033[93m'
+            if index == l:
+                s += '\033[94m'
+            elif index == r:
+                s += '\033[92m'
+
+            s += str(x)
+            if x != arr[e-1]:
+                s += ' '
+            index += 1
+        
+            s += '\033[0m'
+        s += ']'
+
+        print s
 
     def merge(l, e):
         s = l
@@ -20,38 +55,77 @@ def merge_sort(arr):
         if r != e-1:
             r += 1 if arr[r] > arr[r+1] else 0
         mid = r
-        display(s, mid, e, l, r)
+        display(s, mid, e, l, r, 0)
         for n in range(l, e-1):
-            if r == e or arr[l] < arr[r]:
-                arr[n], arr[l] = arr[l], arr[n]
+            if n == r:
+                print 'n = r'
+                display(s, mid, e, l, r, n)
+                break
+            elif r == e or arr[l] < arr[r]:
+                swap(n, l)
                 if (n < mid and l < mid) or r == e or (l >= mid and l+1 != r):
                     l += 1
-                if l == n:
-                    display(s, mid, e, l, r)
-                    #print arr[s:e],'\n', l, r
+                elif l > mid and l+1 == r and l-1 != n and arr[l] > arr[l-1]:
+                    l -= 1
+                if l < n or l == r:
+                    print 'l <  n'
+                    display(s, mid, e, l, r, n)
                     break
-                if l == r:
-                    r += 1
-                    if l == e-1:
-                        display(s, mid, e, l, r)
-                        #print arr[s:e],'\n', l, r
-                        break
 
             else:
                 if l == n and l >= mid and l+1 != r:
-                    arr[l], arr[l+1] = arr[l+1], arr[l]
-                arr[n], arr[r] = arr[r], arr[n]
+                    swap(l, l+1)
+                swap(n, r)
                 if l < mid:
                     l = r
                 if l == n:
                     l += 1
                 r += 1
             
-            display(s, mid, e, l, r)
-            #print arr[s:e],'\n', l, r
+            display(s, mid, e, l, r, n)
 
         if arr[e-1] < arr[e-2]:
-            arr[e-1], arr[e-2] = arr[e-2], arr[e-1]
+            swap(e-1, e-2)
+        print
+    
+    def merge2(l, e):
+        s = l
+
+        r = int((l+e)/2) 
+        if r != e-1:
+            r += 1 if arr[r] > arr[r+1] else 0
+        mid = r
+        display(s, mid, e, l, r, 0)
+        for n in range(l, e-1):
+            if n == r:
+                print 'n = r'
+                display(s, mid, e, l, r, n)
+                break
+            elif r == e or arr[l] < arr[r]:
+                swap(n, l)
+                if (n < mid and l < mid) or r == e or (l >= mid and l+1 != r):
+                    l += 1
+                elif l > mid and l+1 == r and l-1 != n and arr[l] > arr[l-1]:
+                    l -= 1
+                if l < n or l == r:
+                    print 'l <  n'
+                    display(s, mid, e, l, r, n)
+                    break
+
+            else:
+                if l == n and l >= mid and l+1 != r:
+                    swap(l, l+1)
+                swap(n, r)
+                if l < mid:
+                    l = r
+                if l == n:
+                    l += 1
+                r += 1
+            
+            display(s, mid, e, l, r, n)
+
+        if arr[e-1] < arr[e-2]:
+            swap(e-1, e-2)
         print
     
     def rec_helper(start, end):
@@ -62,7 +136,7 @@ def merge_sort(arr):
         rec_helper(start, mid)
         rec_helper(mid+1, end)
 
-        merge(start, end+1)
+        merge2(start, end+1)
 
     rec_helper(0, len(arr)-1)
 
