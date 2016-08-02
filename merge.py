@@ -1,6 +1,5 @@
-# the entire issue is determining where l should go next. Might be impossible to do in constant time.
-
 from random import shuffle
+from math import sqrt
 num = 10
 a = range(num)
 shuffle(a)
@@ -127,18 +126,41 @@ def merge_sort(arr):
         if arr[e-1] < arr[e-2]:
             swap(e-1, e-2)
         print
-    
+
+    def mannila_merge(start, mid, end):
+        """ This is an attempted replication of the in-place merge algorithm
+            by Mannila and Ukkomen.
+        """
+        buff = int(start + sqrt(mid-start))
+        blocks = range(start, mid, buff) + mid
+        for i in range(1, buff):
+            last = arr[blocks[i]-1]
+            if last < arr[mid]:
+                blocks.append(mid)
+            elif last > arr[-1]:
+                blocks.append(end-1)
+            else: #improve run time of this
+                for j in range(blocks[-1], end):
+                    if arr[j] < last and last <= arr[j+1]:
+                        blocks.append(j)
+                        break
+
+
+
+
     def rec_helper(start, end):
         if start == end:
             return
 
-        mid = int((start+end)/2)
+        mid = int((start+end)/2) 
+        if mid != e-1:
+            mid += 1 if arr[mid] > arr[mid+1] else 0
         rec_helper(start, mid)
-        rec_helper(mid+1, end)
+        rec_helper(mid, end)
 
-        merge2(start, end+1)
+        mannila_merge(start, mid, end)
 
-    rec_helper(0, len(arr)-1)
+    rec_helper(0, len(arr))
 
 merge_sort(a)
 print a == range(num)
