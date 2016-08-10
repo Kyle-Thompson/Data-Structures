@@ -2,6 +2,7 @@
  *
  */
 
+#include <algorithm>  // std::swap
 #include <vector> // replace this with custom vector when ready.
 
 
@@ -56,8 +57,11 @@ public:
         void merge(heap<T>&, Compare);
     template <class Compare>
         void merge(heap<T>&&, Compare);
-    
 
+
+/* Helpers */
+private:
+    auto parent = [](size_type c) { return (curr - (curr+1)%2)/2; }
 };
 
 
@@ -147,3 +151,70 @@ heap<T>::get()
     assert(!empty());
     return data[0];
 }
+
+
+
+// Modifiers
+
+/*
+ Function: push
+ Parameters: 
+ */
+template <class T>
+void
+heap<T>::push(const_ref element)
+{
+    size_type curr = data.size();
+    data.push_back(element);
+
+    for (size_type p = parent(curr); data[p] < data[curr]; curr = p, p = parent(curr))
+        std::swap(data[parent], data[curr]);
+}
+
+template <class T>
+void
+heap<T>::push(rvalue_ref element)
+{
+    
+}
+
+
+/*
+ Function: emplace
+ */
+template <class T, class... Args>
+void
+heap<T>::emplace(Args&&...)
+{
+    
+}
+
+
+/*
+Function: pop
+Parameters: None
+Return value: None
+
+Description:
+
+Complexity:
+ */
+template <class T>
+void
+heap<T>::pop()
+{
+    
+}
+    
+
+void swap(heap<T>&);
+void clear() noexcept;
+
+/* Operations */
+void merge(heap<T>&);
+void merge(heap<T>&&);
+template <class Compare>
+    void merge(heap<T>&, Compare);
+template <class Compare>
+    void merge(heap<T>&&, Compare);
+
