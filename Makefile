@@ -7,4 +7,7 @@ list:	list_tester.cc list.h
 	$(COMP) list_tester list_tester.cc
 
 redblack:	redblack_tester.cc redblack_tree.h
-	$(COMP) redblack_test redblack_tester.h
+	$(COMP) redblack_test redblack_tester.cc
+
+algorithm:	test_alg.cc algorithm.h
+	$(COMP) test_alg test_alg.cc
