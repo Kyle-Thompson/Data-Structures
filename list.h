@@ -35,6 +35,8 @@
 #include <memory>      // allocator
 #include <utility>     // swap
 
+namespace ads {
+
 template <class T, class Alloc = std::allocator<T>>
 class list {
     
@@ -1459,5 +1461,7 @@ list<T, Alloc>::reverse() noexcept
         (it++).node->move_before(begin().node);
 }
 
+
+} // end namespace
 
 #endif /* list_h */
