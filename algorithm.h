@@ -1,5 +1,5 @@
-#ifndef ALGORITHM_H
-#define ALGORITHM_H
+//#ifndef ALGORITHM_H
+//#define ALGORITHM_H
 
 /*
  * Functions:
@@ -7,6 +7,7 @@
  * 
  */
 
+// delete all these includes later.
 #include <vector>
 #include <array>
 #include <iostream>
@@ -18,15 +19,13 @@ namespace ads {
 
 // template <class T> // replace all int with T
 std::vector<int>&
-sort(std::vector<int>& v)
+sort(std::vector<int>& v) // sort(ads::container<T>& v)
 {
     std::allocator<int> alloc;
-    std::size_t size = v.size();
-    int* store = (int*) malloc(size*sizeof(int));
-//    int* store = alloc.allocate(size);
+    auto size = v.size();
+    int store[1000]; // TODO delete when using only constant extra space.
     
     auto merge = [&](std::size_t index, std::size_t len) { // TODO make this use constant extra space.
-        cout << "merging index " << index << " and len " << len << "\n";
         std::size_t end = (len < size ? len : size), mid = len/2;
         
         std::size_t l = index, r = index + mid;
@@ -53,11 +52,11 @@ sort(std::vector<int>& v)
         }
     }
 
-    //alloc.deallocate(store, size);
-    free(store);
     return v;
 }
 
+
+
 }
 
-#endif
+//#endif
