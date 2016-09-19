@@ -35,6 +35,8 @@
 #include <memory>      // allocator
 #include <utility>     // swap
 
+#include "typedefs.h"  // type definitions
+
 namespace ads {
 
 template <class T, class Alloc = std::allocator<T>>
@@ -1264,7 +1266,7 @@ list<T, Alloc>::splice(const_iterator pos, list<T, Alloc>&& x, const_iterator fi
 template <class T, class Alloc>
 void
 list<T, Alloc>::remove(const_ref element) {
-    auto it = std::find(begin(), end(), element);
+    auto it = std::find(cbegin(), cend(), element);
     
     if (it != end())
         erase(it);
