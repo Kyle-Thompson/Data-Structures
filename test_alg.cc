@@ -3,18 +3,18 @@
 #include <algorithm>
 #include <iostream>
 
-using namespace std;
 
 void pr(const vector<int>& v) {
     for (auto i : v) {
-        cout << i << ", ";
+        std::cout << i << ", ";
     }
-    cout << "\n";
+    std::cout << "\n";
 }
 
 int main() {
-    vector<int> v({8, 7, 6, 5, 4, 3, 2, 1});
+    std::vector<int> v({8, 7, 6, 5, 4, 3, 2, 1});
 
+    std::cout << "test\n";
     ads::sort(v);
 
     pr(v);
