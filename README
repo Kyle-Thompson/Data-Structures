@@ -27,3 +27,13 @@ Note that currently list.h is the only file worth looking at. The rest are barel
 / Hashes
 
 / Graphs
+
+
+Notes:
+ - if i have a file typedefs.h with the typdefs defined within the ads namespace and then I define a container within the ads namespace, do I still have to specify ads:: when using a typedef? I don't think so and this could save a lot of code duplication.
+
+ - Add an optimization param to all pointer based sequence template definitions.
+
+ - Stop worrying about standard compliance. It was a cool idea initially but now it's just going to hold this back.
+
+
