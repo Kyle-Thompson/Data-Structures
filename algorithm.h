@@ -13,7 +13,6 @@
 
 
 #include <algorithm>
-#include "typedefs.h"
 
 namespace ads {
 
@@ -24,41 +23,62 @@ sort(std::vector<T>& v) // sort(ads::container<T>& v)
     // TODO parallelize
     const auto size = v.size();
 
-    //auto print = [&](std)
+    auto print = [&]() {
+        for (const T& i : v) {
+            std::cout << i << ", ";
+        }
+        std::cout << "\n";
+    };
 
-    auto n_space_merge = [&](size_type index, size_type len) {
-        T store[1000]; // TODO delete when using only constant extra space.
-        size_type end = std::min(index + len, size), mid = len/2;
-        
-        size_type l = index, r = index + mid;
-        for (size_type i = 0; i < end; ++i) {
-            if (l == mid) {
-                store[i] = v[r++];
-            } else if (r == end) {
-                store[i] = v[l++];
+    auto n_space_merge = [&](std::size_t index, std::size_t len) {
+        std::vector<T> store;
+        std::size_t end_range = (index+len < size ? len : size-index), mid = len/2;
+        std::size_t l = index, r = index + mid;
+
+        for (std::size_t i = 0; i < end_range; ++i) {
+            if (l == index + mid) {
+                store.push_back(v[r++]);
+            } else if (r == index + end_range) {
+                store.push_back(v[l++]);
             } else if (v[l] < v[r]) {
-                store[i] = v[l++];
+                store.push_back(v[l++]);
             } else {
-                store[i] = v[r++];
+                store.push_back(v[r++]);
             } 
         }
 
-        for (size_type i = 0; i < end; ++i)
+        for (std::size_t i = 0; i < end_range; ++i) {
             v[index + i] = store[i];
+        }
+
+        store.clear();
     };
     
-    auto const_space_merge = [&](size_type index, size_type len) {
+    auto const_space_merge = [&](std::size_t index, std::size_t len) {
 
+    };
+
+
+///*
+print();
+    for (std::size_t i = 1; i < size;) {
+        i *= 2;
+        for (std::size_t j = 0; j < size; j += i) {
+            n_space_merge(j, i);
+        }
     }
-
-//    for (size_type i = 1; i < size;) {
-//        i *= 2;
-//        for (size_type j = 0; j < size + i /* unsure about this */; j += i) {
-//            merge(j, i);
-//        }
-//    }
-
-    n_space_merge(2, 2);
+print();
+//*/
+/*
+    print();
+    //n_space_merge(0, 2); print();
+    //n_space_merge(2, 2); print();
+    n_space_merge(4, 2); print();
+    n_space_merge(6, 2); print();
+    //n_space_merge(0, 4); print();
+    n_space_merge(4, 4); print();
+    //n_space_merge(0, 8); print();
+*/
     return v;
 }
 
