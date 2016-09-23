@@ -35,8 +35,6 @@
 #include <memory>      // allocator
 #include <utility>     // swap
 
-#include "typedefs.h"  // type definitions
-
 namespace ads {
 
 template <class T, class Alloc = std::allocator<T>>
@@ -86,7 +84,7 @@ private:
     
 /* Iterators */
 private:
-    class list_iterator : public std::iterator < std::bidirectional_iterator_tag, value_type > {
+    class list_iterator : public std::iterator< std::bidirectional_iterator_tag, value_type > {
         
     /* Iterator data members */
     protected:
