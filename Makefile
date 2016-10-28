@@ -6,8 +6,8 @@ FILES = list_tester
 list:	test_list.cc list.h
 	$(COMP) test_list test_list.cc
 
-redblack:	redblack_tester.cc redblack_tree.h
-	$(COMP) redblack_test redblack_tester.cc
+redblack:	test_redblack_tree.cc redblack_tree.h
+	$(COMP) redblack_test test_redblack_tree.cc
 
 algorithm:	test_alg.cc algorithm.h
 	$(COMP) test_alg test_alg.cc
