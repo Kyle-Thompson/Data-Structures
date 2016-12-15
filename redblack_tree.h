@@ -8,6 +8,7 @@
 
 
 #include <memory>   // allocator
+#include <stdio.h>
 
 template <class T>
 class redblack_tree {
@@ -83,7 +84,7 @@ public:
     redblack_tree(const redblack_tree<T>&);
     redblack_tree(redblack_tree<T>&&);
     redblack_tree(std::initializer_list<T>);
-    ~redblack_tree();
+    ~redblack_tree() = default;
 
     /* Assignmnent */
     redblack_tree<T>& operator=(const redblack_tree<T>&); 
@@ -100,7 +101,7 @@ public:
 
     /* Modifiers */
     void push(const_ref);
-    void push(rvalue_ref);
+    //void push(rvalue_ref);
     template <class... Args>
         void emplace(Args&&...);
     void swap(redblack_tree<T>&);
@@ -151,66 +152,6 @@ redblack_tree<T>::print() {
     if (_root) helper(_root, 0);
 }
 
-
-// Constructors
-
-/*
- Function: constructor
- Parameters:
-  - 
-  - 
- Return value: None
-
- Description:
-
- Complexity:
- */
-
-// 2. copy
-template <class T>
-redblack_tree<T>::redblack_tree(const redblack_tree<T>& rhs)
-: _size(rhs._size)
-, _root(rhs._root) // TODO currently shallow copy.
-{}
-
-// 3. move
-template <class T>
-redblack_tree<T>::redblack_tree(redblack_tree<T>&& rhs)
-: _size(std::move(rhs._size))
-, _root(std::move(rhs._root))
-{}
-
-// 4. initializer list
-template <class T>
-redblack_tree<T>::redblack_tree(std::initializer_list<T> il)
-{}
-
-
-
-template <class T>
-redblack_tree<T>::~redblack_tree() {
-
-}
-
-
-
-// Assignment
-
-/*
- Function: operator=
- */
-
-
-
-// Capacity
-
-
-
-// Element Access
-
-/*
- 
- */
 template <class T>
 bool
 redblack_tree<T>::has(const_ref element) const
@@ -275,27 +216,32 @@ redblack_tree<T>::push(const_ref element)
 
     // Find the correct insertion spot.
     auto curr = _root;
-    while (true) {
+    bool added = false;
+    while (!added) {
         switch (compare(element, curr->data)) {
         case -1:
             if (!curr->left) {
                 alloc.construct(node, element, curr);
                 curr->left = node;
                 curr = curr->left;
+                added = true;
                 break;
             } else {
                 curr = curr->left;
             }
+            break;
 
         case 1:
             if (!curr->right) {
                 alloc.construct(node, element, curr);
                 curr->right = node;
                 curr = curr->right;
+                added = true;
                 break;
             } else {
                 curr = curr->right;
             }
+            break;
 
         default:
             return;
@@ -327,6 +273,7 @@ redblack_tree<T>::uncle(Node* n) {
 template <class T>
 void 
 redblack_tree<T>::rotate_left(Node* n) {
+    printf("Rotating left");
     n->right->parent = n->parent;
     if (n->parent) {
         if (n == n->parent->left) {
@@ -344,6 +291,7 @@ redblack_tree<T>::rotate_left(Node* n) {
 template <class T>
 void 
 redblack_tree<T>::rotate_right(Node* n) {
+    printf("Rotating right");
     n->left->parent = n->parent;
     if (n->parent) {
         if (n == n->parent->left) {
@@ -360,6 +308,7 @@ redblack_tree<T>::rotate_right(Node* n) {
 
 template <class T>
 void redblack_tree<T>::insert_case1(Node* n) {
+    printf("Inside insert case 1\n");
     if (n->parent == nullptr) {
         n->colour = Node::Colour::BLACK;
     } else {
@@ -369,6 +318,7 @@ void redblack_tree<T>::insert_case1(Node* n) {
 
 template <class T>
 void redblack_tree<T>::insert_case2(Node* n) {
+    printf("Inside insert case 2\n");
     if (n->parent->colour == Node::Colour::BLACK) {
         return;
     } else {
@@ -378,6 +328,7 @@ void redblack_tree<T>::insert_case2(Node* n) {
 
 template <class T>
 void redblack_tree<T>::insert_case3(Node* n) {
+    printf("Inside insert case 3\n");
     Node* u = uncle(n);
     if (u != nullptr && u->colour == Node::Colour::RED) {
         n->parent->colour = Node::Colour::BLACK;
@@ -392,6 +343,7 @@ void redblack_tree<T>::insert_case3(Node* n) {
 
 template <class T>
 void redblack_tree<T>::insert_case4(Node* n) {
+    printf("Inside insert case 4\n");
     Node* g = grandparent(n);
     if (n == n->parent->right && n->parent == g->left) {
         rotate_left(n->parent);
@@ -405,6 +357,7 @@ void redblack_tree<T>::insert_case4(Node* n) {
 
 template <class T>
 void redblack_tree<T>::insert_case5(Node* n) {
+    printf("Inside insert case 5\n");
     Node* g = grandparent(n);
     n->parent->colour = Node::Colour::BLACK;
     g->colour = Node::Colour::RED;

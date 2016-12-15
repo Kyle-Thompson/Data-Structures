@@ -3,6 +3,8 @@ COMP = g++ $(FLAGS) -o
 
 FILES = list_tester
 
+all:	list redblack algorithm
+
 list:	test_list.cc list.h
 	$(COMP) test_list test_list.cc
 

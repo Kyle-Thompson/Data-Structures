@@ -54,9 +54,7 @@ sort(std::vector<T>& v) // sort(ads::container<T>& v)
         store.clear();
     };
     
-    auto const_space_merge = [&](std::size_t index, std::size_t len) {
-
-    };
+    //auto const_space_merge = [&](std::size_t index, std::size_t len) {};
 
 
 ///*

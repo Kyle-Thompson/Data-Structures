@@ -4,7 +4,7 @@
 #include <iostream>
 
 
-void pr(const vector<int>& v) {
+void pr(const std::vector<int>& v) {
     for (auto i : v) {
         std::cout << i << ", ";
     }
